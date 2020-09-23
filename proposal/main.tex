@@ -1,0 +1,136 @@
+\documentclass[11pt, english]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{minted}
+\usepackage{comment}
+
+
+\title{MW and M31 merger}
+\author{Alberto Brentegani, Davey Plugers, Zhen Xiang}
+\date{25 September 2020}
+
+\begin{document}
+
+\begin{titlepage}
+\makeatletter
+\begin{center}
+
+\vspace*{-1in}
+\begin{figure}[htb]
+    \centering
+    \includegraphics[width=8cm]{lu_logo.png}
+\end{figure}
+
+\vspace{-25pt}
+\rule{125mm}{0.1mm} \\
+\vspace{5pt}
+\begin{Large}
+    \textsc{Faculty of Science}\\
+\end{Large}
+\vspace{5pt}
+\textit{Course of:}\\
+
+\begin{Large}
+    \textsc{Simulation and Modeling in Astrophysics}\\
+\end{Large}
+\vspace{30pt}
+
+\begin{LARGE}
+    \textbf{Project proposal:} \\
+    \textbf{\@title} \\
+\end{LARGE}
+\vfill
+
+\begin{normalsize}
+	\begin{flushleft}
+	  \textit{Date:} \hfill \textit{Students:}\\
+	  \vspace{1pt}
+	  \@date \hfill Alberto Brentegani\\
+	  \hfill Davey Plugers\\
+	  \hfill Zhen Xiang\\
+	  \vspace{10pt}
+	\end{flushleft}
+\end{normalsize}
+\vspace{20pt}
+
+\rule{125mm}{0.1mm} \\
+\vspace{5pt}
+\scshape{\large{Academic Year 2020/2021}} \\
+
+\end{center}
+\makeatother
+\end{titlepage}
+
+TO DO LIST:
+\begin{itemize}
+    \item come up with a cool title
+    \item make bib with sources
+    \item write main part of the proposal:
+    \begin{itemize}
+        \item our question: one could be "Can the solar system stay bound after the MW-M31 merger?" or "What is the effect of the IGM on the future MW-M31 merger?", perhaps we could also mention the SMBH interaction and the star ejection rate here
+        \item what we have to do to answer the question: use of AMUSE to simulate the merger focusing on the near solar system
+        \item how will we do it: use of nbody and hydro
+        \item initial conditions: good dynamic model of MW and M31 featuring bulge, bar, disk, halo, model of the IGM
+        \item what was done before: we cite the paper that we already have, adding to them the papers from Roeland van der Morel and the "What would happen to earth in case of a merger?" one
+        \item who cares about our results: we will implement the IGN and see if it has any effect, it could be interesting for all people studying galaxy mergers
+        \item mitigation strategy: idk what this is
+    \end{itemize}
+    \item abstract is just a summary of the main part
+    \item resources: for test runs we could use our own devices, after the model is improved enough we could start using ALICE
+    \item expected results: 2-dim (and maybe 3-dim) plots and animations that show the evolution of the merger, with a focus on both SMBH and solar system. Change in seperation between the SMBH in function of time for different tangential velocities. These will later be compared with and without the IGM accounted for.
+\end{itemize}
+
+\section{Goals}
+Study of MW and M31 merger, focusing on the effect on the near solar system and interaction between the two super massive BH.
+
+\section{Milestones}
+
+First we gather literature on merging galaxies, initial conditions and intergalactic medium (IGM)\\
+Simulation steps:\\
+\begin{enumerate}
+ 
+\item set initial dynamical initial conditions (star mass distribution, galactic gas distributuion, etc)
+\item  simulate each component, each star has 3 velocities to factor in: proper velocity, tangential velocity around the center of the galaxy, galaxy relative velocity. We can factor out the proper velocity of the star into account because \(V_{tan}\) is much larger. We derive tangential velocity from redshift (?)
+\item  add each component to the complete model
+\item  simulating the galaxy with a 1-dim radial density profile
+\item  improve the density profile with a radial coordinate (it becomes 2-dim) so the galaxies feature spiral arms
+\item  adding the gas compnent of the disk
+\item  simulate 2 galaxies at the same time
+\item  model the merging event in different phases, each one with different timesteps (eg approaching phase, early interacting, inspiral of the SMBH)
+\item  simulate different initial dynamical conditions (eg relative velocity)
+\item  add IGM.
+
+\end{enumerate}
+\section{Expected results}
+
+We expect to produce plots and 2-dim (maybe 3-dim) plots and animations that show the evolution of the merger, with a focus on both SMBH and solar system.
+Change in seperation between the SMBH in function of time for different tangential velocities. These will later be compared with and without the IGM accounted for.
+
+
+
+Same with velocity perpendicular of the disk, this is mostly going to be negligeble
+
+I think at the start of the simulation
+
+But not once they hit eachother
+
+Wait but we don't have to factor anything out though right? We only need 1 velocity vector for each element?
+
+We just add the radial and tangential component on eachother
+
+I think we need to use experimental data for the angular velocity
+
+So simple steps that we take  how we want to make the simulation better step by step
+
+
+the steps could be:
+
+
+
+Maybe a plan? what we expect to have finished by when?
+
+
+
+\end{document}
+

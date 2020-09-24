@@ -2,8 +2,33 @@
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{booktabs}
 \usepackage{minted}
 \usepackage{comment}
+
+\usepackage[
+            backend=biber,
+            citestyle=numeric,
+            bibstyle=authoryear,
+            sorting=none,
+            ]{biblatex}
+\usepackage[nottoc,numbib]{tocbibind}
+\usepackage{emptypage}
+
+\makeatletter
+\input{numeric.bbx}
+\makeatother
+
+\addbibresource{bibliography.bib}
+\AtEveryBibitem{\clearfield{isbn}}
+\AtEveryBibitem{\clearfield{note}} 
+\AtEveryBibitem{\clearfield{url}}
+\AtEveryBibitem{\clearfield{doi}}
+\AtEveryBibitem{\clearfield{issn}}
+\AtEveryBibitem{\clearfield{month}}
+\AtEveryBibitem{\clearfield{eprint}}
+\DeclareNameAlias{author}{family-given}
 
 
 \title{MW and M31 merger}
@@ -62,24 +87,42 @@
 \makeatother
 \end{titlepage}
 
+
 TO DO LIST:
 \begin{itemize}
-    \item come up with a cool title
+    \item come up with a cool title\\
+    //Where we are going:the fate of solar system after MW and M31 merger
     \item make bib with sources
     \item write main part of the proposal:
     \begin{itemize}
-        \item our question: one could be "Can the solar system stay bound after the MW-M31 merger?" or "What is the effect of the IGM on the future MW-M31 merger?", perhaps we could also mention the SMBH interaction and the star ejection rate here
+        \item our question: one could be "Can the solar system stay bound after the MW-M31 merger?" or "What is the effect of the IGM on the future MW-M31 merger?", perhaps we could also mention the SMBH interaction and the star ejection rate here \\
+        //Maybe we could make our question simpler first, and study the solar system. Then add something else later
         \item what we have to do to answer the question: use of AMUSE to simulate the merger focusing on the near solar system
-        \item how will we do it: use of nbody and hydro
-        \item initial conditions: good dynamic model of MW and M31 featuring bulge, bar, disk, halo, model of the IGM
-        \item what was done before: we cite the paper that we already have, adding to them the papers from Roeland van der Morel and the "What would happen to earth in case of a merger?" one
-        \item who cares about our results: we will implement the IGN and see if it has any effect, it could be interesting for all people studying galaxy mergers
-        \item mitigation strategy: idk what this is
+        \item how will we do it: use of nbody and hydro\\
+        //gravity, to build galaxy model. For tracking of the solar system, we can take a ring out of galaxy and get some statistics.
+        \item initial conditions: good dynamic model of MW and M31 (for initial conditions see \textcite{van_der_Marel_2019}) featuring bulge, bar, disk, halo, model of the IGM (see \textcite{Lehner_2020}) \\
+        //use some data in reference to build a model(angle,relative velocity, radius, mass)
+        \item what was done before: we cite the paper that we already have (like \textcite{Schiavi_2019}), adding to them the papers from Roeland van der Marel (they are \textcite{Sohn_2012}, \textcite{van_der_Marel_2012} and \textcite{van_der_Marel_2012b}) and the "What would happen to earth in case of a merger?" one
+        \item who cares about our results: we will implement the IGM and see if it has any effect, it could be interesting for all people studying galaxy mergers
+        \item mitigation strategy: idk what this is\\
+        //goal:study MW and M31 and see the fate of solar system;\\
+        action:use amuse to build our model and track the solar system\\
+        action plan: 
+        \begin{itemize}
+            \item collect and organize reference and get familar with amuse
+            \item set dynamical initial conditions
+            \item build galaxy model
+            \item simulate the merger process
+            \item track solar system
+            \end{itemize}
+        
+        
     \end{itemize}
     \item abstract is just a summary of the main part
     \item resources: for test runs we could use our own devices, after the model is improved enough we could start using ALICE
     \item expected results: 2-dim (and maybe 3-dim) plots and animations that show the evolution of the merger, with a focus on both SMBH and solar system. Change in seperation between the SMBH in function of time for different tangential velocities. These will later be compared with and without the IGM accounted for.
 \end{itemize}
+
 
 \section{Goals}
 Study of MW and M31 merger, focusing on the effect on the near solar system and interaction between the two super massive BH.
@@ -131,6 +174,7 @@ the steps could be:
 Maybe a plan? what we expect to have finished by when?
 
 
+\printbibliography[heading=bibintoc,title={Refernces}]
 
 \end{document}
 

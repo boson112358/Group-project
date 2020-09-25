@@ -1,12 +1,17 @@
-\documentclass[11pt, english]{article}
+\documentclass[10pt,english]{article}
+
+\usepackage[pass]{geometry}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{graphicx}
 \usepackage{amssymb}
+\usepackage{amsmath}
 \usepackage{booktabs}
 \usepackage{minted}
 \usepackage{comment}
+\usepackage{url}
 
+%Bibliography stuff
 \usepackage[
             backend=biber,
             citestyle=numeric,
@@ -30,12 +35,15 @@
 \AtEveryBibitem{\clearfield{eprint}}
 \DeclareNameAlias{author}{family-given}
 
-
-\title{MW and M31 merger}
+%Title, author(s) and date
+\title{Where we are going: the fate of the Solar System after the Milky Way and Andromeda merger}
 \author{Alberto Brentegani, Davey Plugers, Zhen Xiang}
 \date{25 September 2020}
 
 \begin{document}
+
+%used to restore the default article layout after including the geometry package with the pass argument
+\restoregeometry
 
 \begin{titlepage}
 \makeatletter
@@ -87,94 +95,94 @@
 \makeatother
 \end{titlepage}
 
+%new layout for the text
+\newgeometry{
+    textheight=9in,
+    textwidth=6.5in,
+    top=1in,
+    headheight=14pt,
+    headsep=25pt,
+    footskip=30pt
+  }
 
-TO DO LIST:
+\section{Abstract}
+\label{abstract}
+Within the Local Group a macroscopic event is set to take place in the future: given that the Andromeda Galaxy is moving towards the Milky Way, the two galaxies will not be able to avoid the collision and the final merger. This immediately raises a question: at the end of such an event, what will happen to the Solar System? To get an answer our research will focus on simulating such a collision and merger using the AMUSE software, with the goal to unravel the fate of the Solar System. Additionally, we will take into consideration the intergalactic medium and estimate the dynamical evolution of the two super massive Black Holes centered in both galaxies, which are of crucial importance.\par %Finally, we aim to achieve plots and animations of the collision and merger events. 
+\smallskip
+\section{Project description}
+\label{project}
+The future evolution of the Solar System is a fascinating problem, on which we already have some insight: the Sun will evolve into a Red Giant, probably including the inner planets into its expanding envelope. Although what will happen after this phase remains an open problem. To shed some light on the future we need to consider the Sun as a member of the Milky Way (MW) and our Galaxy as a member of the Local Group. The MW and the Andromeda Galaxy (M31) are the two most massive members of the Local Group that, according to recent simulations (see \textcite{Cox_2008}, \textcite{van_der_Marel_2019} and \textcite{Schiavi_2019}) and observational measurements (see \textcite{van_der_Marel_2012b}), are likely to experience a merger event in \(\approx 5\: Gyr\).\par
+\smallskip
+The fate of our System after the merger is yet an unsolved problem that we will address in this project with the help of the AMUSE software (see \textcite{Portegies_Zwart_McMillan_2018}, \textcite{Portegies_Zwart_2013}, \textcite{Pelupessy_2013} and \textcite{Portegies_Zwart_2009}). Using this tool we will first model both the MW and M31, then set the galaxies in motion and monitor their evolution during the merger event, following closely the Solar System and its closer stars. To improve the past simulation we will add to the model the intergalactic medium (IGM), which could have an important role in the merger due to friction. Furthermore we will monitor also the fate of the super massive Black Holes (SMBH) that lie at the center of both galaxies. We will answer the following questions:
 \begin{itemize}
-    \item come up with a cool title\\
-    //Where we are going:the fate of solar system after MW and M31 merger
-    \item make bib with sources
-    \item write main part of the proposal:
-    \begin{itemize}
-        \item our question: one could be "Can the solar system stay bound after the MW-M31 merger?" or "What is the effect of the IGM on the future MW-M31 merger?", perhaps we could also mention the SMBH interaction and the star ejection rate here \\
-        //Maybe we could make our question simpler first, and study the solar system. Then add something else later
-        \item what we have to do to answer the question: use of AMUSE to simulate the merger focusing on the near solar system
-        \item how will we do it: use of nbody and hydro\\
-        //gravity, to build galaxy model. For tracking of the solar system, we can take a ring out of galaxy and get some statistics.
-        \item initial conditions: good dynamic model of MW and M31 (for initial conditions see \textcite{van_der_Marel_2019}) featuring bulge, bar, disk, halo, model of the IGM (see \textcite{Lehner_2020}) \\
-        //use some data in reference to build a model(angle,relative velocity, radius, mass)
-        \item what was done before: we cite the paper that we already have (like \textcite{Schiavi_2019}), adding to them the papers from Roeland van der Marel (they are \textcite{Sohn_2012}, \textcite{van_der_Marel_2012} and \textcite{van_der_Marel_2012b}) and the "What would happen to earth in case of a merger?" one
-        \item who cares about our results: we will implement the IGM and see if it has any effect, it could be interesting for all people studying galaxy mergers
-        \item mitigation strategy: idk what this is\\
-        //goal:study MW and M31 and see the fate of solar system;\\
-        action:use amuse to build our model and track the solar system\\
-        action plan: 
-        \begin{itemize}
-            \item collect and organize reference and get familar with amuse
-            \item set dynamical initial conditions
-            \item build galaxy model
-            \item simulate the merger process
-            \item track solar system
-            \end{itemize}
-        
-        
-    \end{itemize}
-    \item abstract is just a summary of the main part
-    \item resources: for test runs we could use our own devices, after the model is improved enough we could start using ALICE
-    \item expected results: 2-dim (and maybe 3-dim) plots and animations that show the evolution of the merger, with a focus on both SMBH and solar system. Change in seperation between the SMBH in function of time for different tangential velocities. These will later be compared with and without the IGM accounted for.
+    \item How do the starting conditions of the simulation, as relative velocity and orientation, and the presence of the IGM affect the dynamical evolution of the merger?
+    \item What is the statistical likelihood of our Solar System to remain bound to the newly formed galaxy after the merger? If that is the case, what will be its position?
+    \item What will be the final separation of the two SMBHs?
 \end{itemize}
+\par
+\smallskip
+The simulations will be done with the implementation of a gravitational and hydrodynamics module. We will put a substantial effort into the research of the specific gravity and hydrodynamic solvers best suited for our problem. These modules will be used to build and evolve the galaxy models and to simulate the IGM. The galaxy models will feature bulge, bar, disk and halo, with focus on reproducing the spiral arms. The Solar System will be indirectly tracked by defining a region around its current position in the galactic plane and monitoring the fate of the particles in this region. Data-analysis should then be able to show the probability of different end scenarios for the Solar System: it could undergo a change in its coordinate in the galactic plane (closer or further to the center) or it could become unbound and be ejected.\par
+\smallskip
+To obtain meaningful results we will carefully choose the initial conditions of our simulation. First we will need a detailed model of MW and M31 (our goal is to use an improved version of the one used in \textcite{Cox_2008}) and a model of the IGM (for extension and density profile refer to \textcite{Lehner_2020}). We will refer to \textcite{Raychaudhury_1989} to get initial separation and galactic spin vectors. However no agreement has been reached for the value of the velocity vector of M31, in the past several values have been proposed (see \textcite{van_der_Marel_2012b}, \textcite{Salomon_2016} and \textcite{van_der_Marel_2019}) in a range that spans from \(\approx 10\: km/s\) to \(\approx 10^2\: km/s\). Given this wide uncertainty our simulations will be run with several values from the possible M31 velocity vectors.\par
+\smallskip
+Much has already been studied in earlier works. In \textcite{Cox_2008} the dynamic evolution of the Solar System during the merger has been studied as well as the separation between the galaxies during the merger. However we can bring improvements on this work: new estimates on M31 velocity and mass distribution are available (see \textcite{Sohn_2012} and \textcite{van_der_Marel_2012}) while other initial conditions were used in the past (see \textcite{Klypin_2002}). Newer papers have used these improved measurements to study the dynamics of the MW-M31 system (see \textcite{van_der_Marel_2012b}) and the effect of the relative velocity on the separation (see \textcite{Schiavi_2019}). Nonetheless neither of these works focuses on the fate of our System or take the IGM into account. \textcite{Lehner_2020} present new measurements and a description of the circumgalactic medium of M31.\par
+\smallskip
+Our results should be able to give us more insight into the MW-M31 merger event. The focus on the Solar System could provide some insight on the on the rate of ejected stars during such an event. By using more recently estimated dynamical initial conditions the results can be compared to \textcite{Cox_2008}, \textcite{van_der_Marel_2012b} and \textcite{Schiavi_2019}. The inclusion of the IGM can improve our understanding on the future of the Local Group and more in general of merging galaxies dynamics.\par
+\smallskip
+\begin{comment}
+    %Our results should be able to give us more insight into the MW-M31 merging. By using more recently discovered initial conditions the results can be compared to \textcite{Cox_2008}. It is also of interest for \textcite{Schiavi_2019} where the effect of the IGM is being studied aswell.
+    %Maybe we could make our question simpler first, and study the solar system. Then add something else later
+    %\item gather literature on merging galaxies, initial conditions and intergalactic medium (IGM)
+    
+    %The project consists of several questions: First, what is the statistical likelihood of our solar system to remain bounded after the merger. Second, how does taking the Intergalactic Medium (IGM) into account, affect the seperation between MW and M31 for different tangential velocities for M31. And last, what will happen with the SMBH
+    
+    %how will we do it: use of nbody gravity and hydro to build both galaxy model and evolve them. Hydro also for the IGN. For tracking of the solar system, we consider a ring region around the solar galaxy coordinates and get some statistics (for this we will need a good estimate of the solar position, we'll have to run multiple simulations to get relevant statistics).
+    
+    %The simulation will be done with the help of a gravitational and hydrodynamics module. The specific gravitational solver has not been decided yet, \texit{AMUSE-petar} is currently being considered but we are still looking for which would be best suited for our problem. These modules are for building the galaxy models, evolving them and simulating an IGM. The solar system will be indirectly tracked by defining a region around it's current position and determining the fate of the particles in this region. Data-analysis should then be able to show the probability of different fates (closer to SMBH, stayed near current position, went to M31 or possibly ejected into space)
+    
+    %use some data in reference to build a model(angle,relative velocity, radius, mass)
+    %We should mention the range of tangential velocities we want to use
+    %We can write something about that when we talk about initial conditions, we can say that there is no agreed velocity and that we will consider an ample range of possibilities
+    %\item Much has already been studied by earlier works. In \textcite{Cox_2008} the fate of our solar system during the merger has been studied as well as the separation between the galaxies during the merger. However initial conditions used in this paper are from 2002 and there have been improvements on the proper motion and mass distribution of M31 \textcite{Sohn_2012} \textcite{van_der_Marel_2012}. Newer papers have used these improved measurements to study the dynamics of the MW-M31-M33 system \textcite{van_der_Marel_2012b} and the effect of the tangential velocity on the seperation \textcite{Schiavi_2019} however neither of these papers look at what happens to our solar system or take the IGM into account. For M31 recent measurements have been done to find the range and density of the gas around it \textcite{Lehner_2020}.
+    %what was done before: we cite the paper that we already have (like \textcite{Schiavi_2019}), adding to them the papers from Roeland van der Marel (they are \textcite{Sohn_2012}, \textcite{van_der_Marel_2012} and \textcite{van_der_Marel_2012b}), another one is \textcite{Cox_2008} and the "What would happen to earth in case of a merger?"  
+    %\item mitigation strategy: idk what this is
+    %Other future developments could be: adding galaxy arms, continue the simulation and see how the 2 galaxy's evolve on long term (will we see all particles on one plain or not for example), look at what happens to other regions of the milky way after collision
+    %simulation steps:
+    %\begin{enumerate}
+        %\item set initial dynamical initial conditions (star mass distribution, galactic gas distributuion, etc)
+        %\item  simulate each component, each star has 3 velocities to factor in: proper velocity, tangential velocity around the center of the galaxy, galaxy relative velocity. We can factor out the proper velocity of the star into account because \(V_{tan}\) is much larger. We derive tangential velocity from redshift (?)
+        %\item  add each component to the complete model
+        %\item  simulating the galaxy with a 1-dim radial density profile
+        %\item  improve the density profile with a radial coordinate (it becomes 2-dim) so the galaxies feature spiral arms
+        %\item  adding the gas compnent of the disk
+        %\item  simulate 2 galaxies at the same time
+        %\item  model the merging event in different phases, each one with different timesteps (eg approaching phase, early interacting, inspiral of the SMBH)
+        %\item  simulate different initial dynamical conditions (eg relative velocity)
+        %\item  add IGM.
+    %\end{enumerate}
+    \begin{itemize}
+        \item collect and organize reference and get familiar with amuse
+        \item build complete galaxy model featuring: bulge, bar, disk, halo
+        \item tune the general galaxy model to reproduce MW and M31
+        \item find the Sun galactic coordinates and set a focus on that region
+        \item set merger initial dynamical conditions (observational constraints)
+        \item try different integration codes to find which works best for our problem
+        \item simulate the merger process,and model the merging event in different phases, each one with different timesteps 
+        \item add IGM to the simulation
+    \end{itemize}
+\end{comment}
+\subsection{Resources}
+\label{resources}
+Initial simulations will be done on a smaller scale, modelling the galaxies with a limited number of particles (i.e. stars), so our own devices can be used to perform test runs. Once made sure our code works as intended, we will increase the accuracy of our models adding a larger number of particles. From this point onwards, to run the final simulations, we will have to rely on the ALICE High Performance Computing facility provided by Leiden University\footnote{\url{https://www.universiteitleiden.nl/en/research/research-facilities/alice-leiden-computer-cluster}}.\par
+\smallskip
+\subsection{Expected results and possible developments}
+\label{expected-results}
+We expect to produce meaningful data that will answer the questions presented at the beginning of Section \ref{project}. To derive the final results we will present plots and animations showing the evolution of the merger and highlighting the Solar System, as well as a plot of the SMBH separation as a function of time. These results will be reproduced for different relative M31 velocities and taking into account the presence (or absence) of the IGM.\par
+\smallskip
+Numerous developments can extend the scope of the project in the future. To achieve an even more refined description of the merger, other members of the Local Group can be taken into consideration (\textcite{van_der_Marel_2012b} suggest that M33 will play an active role in the merger) while factor in the cosmological expansion. The spatial resolution of the simulations can also be increased to study the SMBH binary that will form at the end of the event.\par
 
-
-\section{Goals}
-Study of MW and M31 merger, focusing on the effect on the near solar system and interaction between the two super massive BH.
-
-\section{Milestones}
-
-First we gather literature on merging galaxies, initial conditions and intergalactic medium (IGM)\\
-Simulation steps:\\
-\begin{enumerate}
- 
-\item set initial dynamical initial conditions (star mass distribution, galactic gas distributuion, etc)
-\item  simulate each component, each star has 3 velocities to factor in: proper velocity, tangential velocity around the center of the galaxy, galaxy relative velocity. We can factor out the proper velocity of the star into account because \(V_{tan}\) is much larger. We derive tangential velocity from redshift (?)
-\item  add each component to the complete model
-\item  simulating the galaxy with a 1-dim radial density profile
-\item  improve the density profile with a radial coordinate (it becomes 2-dim) so the galaxies feature spiral arms
-\item  adding the gas compnent of the disk
-\item  simulate 2 galaxies at the same time
-\item  model the merging event in different phases, each one with different timesteps (eg approaching phase, early interacting, inspiral of the SMBH)
-\item  simulate different initial dynamical conditions (eg relative velocity)
-\item  add IGM.
-
-\end{enumerate}
-\section{Expected results}
-
-We expect to produce plots and 2-dim (maybe 3-dim) plots and animations that show the evolution of the merger, with a focus on both SMBH and solar system.
-Change in seperation between the SMBH in function of time for different tangential velocities. These will later be compared with and without the IGM accounted for.
-
-
-
-Same with velocity perpendicular of the disk, this is mostly going to be negligeble
-
-I think at the start of the simulation
-
-But not once they hit eachother
-
-Wait but we don't have to factor anything out though right? We only need 1 velocity vector for each element?
-
-We just add the radial and tangential component on eachother
-
-I think we need to use experimental data for the angular velocity
-
-So simple steps that we take  how we want to make the simulation better step by step
-
-
-the steps could be:
-
-
-
-Maybe a plan? what we expect to have finished by when?
-
-
-\printbibliography[heading=bibintoc,title={Refernces}]
+\setlength\bibitemsep{0.5\baselineskip}
+\printbibliography[heading=bibintoc,title={References}]
 
 \end{document}
 

@@ -1,16 +1,33 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+import os
+import matplotlib as mpl
+if os.environ.get('DISPLAY','') == '':
+    print('No display found. Using non-interactive Agg backend')
+    mpl.use('Agg')
+
+
 import numpy as np
 import matplotlib.pyplot as plt
+import argparse
+
 from amuse.lab import *
 from amuse.ext.galactics_model import new_galactics_model
 
 from progressbar import ProgressBar
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--plot', help='allow output plots', action='store_true')
+parser.add_argument('-f', help='foo value')
+args = parser.parse_args()
+if args.plot:
+    print('Plots turned on')
+    
+PLOT = args.plot
+
 
 def make_plot(disk1, disk2, filename):
-    #print('Plotting {} ... '.format(filename), sep=' ', end='')
     x_label = "X [kpc]"
     y_label = "Y [kpc]"
     
@@ -28,27 +45,26 @@ def make_plot(disk1, disk2, filename):
                    c='tab:orange', alpha=1, s=1, lw=0)
     
     plt.savefig(filename)
-    #print('Done\n')
 
 def make_galaxies(M_galaxy, R_galaxy, n_halo, n_bulge, n_disk):
     converter = nbody_system.nbody_to_si(M_galaxy, R_galaxy)
     
-    print('Building galaxy 1 ... ', sep=' ', end='')
+    print('Building galaxy 1 ... ', sep=' ', end='', flush=True)
     galaxy1 = new_galactics_model(n_halo,
                                   converter,
                                   #do_scale = True,
                                   bulge_number_of_particles=n_bulge,
                                   disk_number_of_particles=n_disk)
-    print('Done\n')
+    print('Done', flush=True)
     
-    print('Building galaxy 2 ... ', sep=' ', end='')
+    print('Building galaxy 2 ... ', sep=' ', end='', flush=True)
     galaxy2 = Particles(len(galaxy1))
     galaxy2.mass = galaxy1.mass
     galaxy2.position = galaxy1.position
     galaxy2.velocity = galaxy1.velocity
-    print('Done\n')
+    print('Done', flush=True)
     
-    print('Adjusting relative velocities and orientations ... ', sep=' ', end='')
+    print('Adjusting relative velocities and orientations ... ', sep=' ', end='', flush=True)
     galaxy1.rotate(0., np.pi/2, np.pi/4)
     galaxy1.position += [100.0, 100, 0] | units.kpc
     #galaxy1.velocity += [-3000.0, 0.0, -3000.0] | units.km/units.s
@@ -57,7 +73,7 @@ def make_galaxies(M_galaxy, R_galaxy, n_halo, n_bulge, n_disk):
     galaxy2.rotate(np.pi/4, np.pi/4, 0.0)
     galaxy2.position -= [100.0, 0, 0] | units.kpc
     galaxy2.velocity -= [0.0, 0.0, 0] | units.km/units.s
-    print('Done\n')
+    print('Done', flush=True)
 
     return galaxy1, galaxy2, converter
 
@@ -75,15 +91,18 @@ def simulate_merger(galaxy1, galaxy2, converter, n_halo, t_end):
     disk1 = set1[:n_halo]
     disk2 = set2[:n_halo]
     
-    make_plot(disk1, disk2, "Galaxy_merger_t0")
+    if PLOT == True:
+        make_plot(disk1, disk2, "Galaxy_merger_t0")
     
     current_iter = 0
     interval = 0.5 | units.Myr
     total_iter = t_end/interval
     
-    progress = ProgressBar(total_days, comp_line='Done', 
-                           global_time_measure=True, iteration_time_measure=True)
-    progress.show(current_day, prefix='Step {} of {}:'.format(current_iter, total_iter), suffix=' ... ')
+    progress = ProgressBar(total_iter, comp_line='Done', 
+                           global_time_measure=True, 
+                           iteration_time_measure=True, 
+                           flush_value=True)
+    progress.show(current_iter, prefix='Step {} of {}:'.format(current_iter, total_iter), suffix=' ... ')
     
     while dynamics_code.model_time < t_end:
         
@@ -93,12 +112,12 @@ def simulate_merger(galaxy1, galaxy2, converter, n_halo, t_end):
         
         dynamics_code.evolve_model(dynamics_code.model_time + interval)
                 
-        progress.show(current_day, prefix='Step {} of {}:'.format(current_iter, total_iter), suffix=' ... ')
+        progress.show(current_iter, prefix='Step {} of {}:'.format(current_iter, total_iter), suffix=' ... ')
         
-    dynamics.stop()
-    
-    make_plot(disk1, disk2,
-              "Galaxy_merger_t" + str(t_end.value_in(units.Myr))+"Myr")
+    if PLOT == True:
+        make_plot(disk1, disk2,
+                  "Galaxy_merger_t" + str(t_end.value_in(units.Myr))+"Myr")
+    dynamics_code.stop()
 
 
 M_galaxy = 1.0e12 | units.MSun

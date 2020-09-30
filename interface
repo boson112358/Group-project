@@ -14,7 +14,7 @@ if __name__ == '__main__':
         host = None
         portnumber = -1
         
-    syspath = ('/home/brentegani/Desktop/sma/sma-group-e-project','/software/amuse/amuse-13.0-python3-fedora31/lib/python3.7/site-packages','/software/local/lib64/python3.7/site-packages','/usr/lib64/python37.zip','/usr/lib64/python3.7','/usr/lib64/python3.7/lib-dynload','/home/brentegani/.local/lib/python3.7/site-packages','/usr/lib64/python3.7/site-packages','/usr/lib/python3.7/site-packages')
+    syspath = ('/home/brentegani/Desktop/sma/sma-group-e-project','/software/amuse/amuse-13.0-python3-fedora31/lib/python3.7/site-packages','/software/local/lib64/python3.7/site-packages','/usr/lib64/python37.zip','/usr/lib64/python3.7','/usr/lib64/python3.7/lib-dynload','/home/brentegani/.local/lib/python3.7/site-packages','/usr/lib64/python3.7/site-packages','/usr/lib64/python3.7/site-packages/mpich','/usr/lib/python3.7/site-packages')
     existing_syspath = set(sys.path)
     for x in syspath:
         if not x in existing_syspath:

@@ -9,21 +9,21 @@ class ProgressBar(object):
     """
     
     def __init__(self, total, decimals = 1, length = 50, fill = '=', tip = '>', end_string = '\r', 
-                 comp_line = '', global_time_measure = False, iteration_time_measure = False):
+                 comp_line = '', global_time_measure = False, iteration_time_measure = False, flush_value = False):
         """
         Initializes the progress bar
         
         Inputs:
-        total       - Required  : total iterations (Int)
-        decimals    - Optional  : positive number of decimals in percent complete (Int)
-        length      - Optional  : character length of bar (Int)
-        fill        - Optional  : bar fill character (Str)
-        tip         - Optional  : bar tip character (Str)
-        end_string  - Optional  : end character (e.g. "\r", "\r\n") (Str)
-        comp_line   - Optional  : line to print after completion (Str)
-        
-        global_time_measure = False
-        iteration_time_measure = False
+        total                  - Required  : total iterations (Int)
+        decimals               - Optional  : positive number of decimals in percent complete (Int)
+        length                 - Optional  : character length of bar (Int)
+        fill                   - Optional  : bar fill character (Str)
+        tip                    - Optional  : bar tip character (Str)
+        end_string             - Optional  : end character (e.g. "\r", "\r\n") (Str)
+        comp_line              - Optional  : line to print after completion (Str)
+        global_time_measure    - Optional  : determines if the total runtime is measured (Bool)
+        iteration_time_measure - Optional  : determines if the runtime of a single loop is measured (Bool)
+        flush_value            - Optional  : flush argument inside each print command (Bool)
         """
         
         self.total = total
@@ -36,6 +36,7 @@ class ProgressBar(object):
         self.comp_line = comp_line
         self.global_time_measure = global_time_measure
         self.iteration_time_measure = iteration_time_measure
+        self.flush_value = flush_value
             
         if self.iteration_time_measure == True:
             self.iteration_time_list = []
@@ -76,7 +77,7 @@ class ProgressBar(object):
                 self.suffix = '- {} left'.format(datetime.timedelta(seconds=estimate_time)) + suffix 
                 
             bar = self.fill * (filled_length - 1) + self.tip + '.' * (self.length - filled_length)
-            print(f'\r{self.prefix} [{bar}] {percent}% {self.suffix}', end = self.end_string)
+            print(f'\r{self.prefix} [{bar}] {percent}% {self.suffix}', end = self.end_string, flush = self.flush_value)
             
         # Print New Line on Complete and full bar without tip
         if iteration == self.total:
@@ -86,5 +87,5 @@ class ProgressBar(object):
                 self.suffix = '- {} elapsed'.format(self.global_time) + suffix
                 
             bar = self.fill * filled_length + '.' * (self.length - filled_length)
-            print(f'\r{self.prefix} [{bar}] {percent}% {self.suffix}', end = '')
-            print(self.comp_line + '\n')
+            print(f'\r{self.prefix} [{bar}] {percent}% {self.suffix}', end = '', flush = self.flush_value)
+            print(self.comp_line)

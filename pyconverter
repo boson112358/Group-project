@@ -2,4 +2,4 @@
 
 jupyter nbconvert --to script --no-prompt MW_M31_merger.ipynb
 
-python3 MW_M31_merger.py
+amuse MW_M31_merger.py

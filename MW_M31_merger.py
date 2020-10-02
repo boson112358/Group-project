@@ -3,28 +3,55 @@
 
 import os
 import matplotlib as mpl
-if os.environ.get('DISPLAY','') == '':
-    print('No display found. Using non-interactive Agg backend')
+if os.environ.get('DISPLAY','') == '' and os.name != 'nt':
+    print('No display found. Using non-interactive Agg backend for matplotlib')
     mpl.use('Agg')
 
 
 import numpy as np
 import matplotlib.pyplot as plt
-import argparse
 
 from amuse.lab import *
 from amuse.ext.galactics_model import new_galactics_model
 
-from progressbar import ProgressBar
+import inspect
+import sys
+
+#finds script path
+filename = inspect.getframeinfo(inspect.currentframe()).filename
+script_path = os.path.dirname(os.path.abspath(filename))
+#add progressbar path to possible paths to import modules
+sys.path.insert(1, script_path + '/python-progressbar/')
+
+
+#ignore warnings (AmuseWarning at end of simulation)
+
+import warnings
+
+warnings.filterwarnings('ignore')
+
+
+#defines parser for terminal usage
+import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--plot', help='allow output plots', action='store_true')
-parser.add_argument('-f', help='foo value')
+parser.add_argument('--plot', 
+                    help='Allow output plots', 
+                    action='store_true')
+parser.add_argument('-f', 
+                    help='Foo value, defined for jupyter notebook compatibility')
 args = parser.parse_args()
-if args.plot:
-    print('Plots turned on')
-    
+
 PLOT = args.plot
+
+if PLOT:
+    print('Plots turned on')
+
+
+#progressbar import
+
+import progressbar as pbar
+import progressbar.widgets as pbwg
 
 
 def make_plot(disk1, disk2, filename):
@@ -35,7 +62,6 @@ def make_plot(disk1, disk2, filename):
     
     plt.xlabel(x_label)
     plt.ylabel(y_label)
-    
     plt.xlim(-300, 300)
     plt.ylim(-300, 300)
 
@@ -44,36 +70,39 @@ def make_plot(disk1, disk2, filename):
     plt.scatter(disk2.x.value_in(units.kpc), disk2.y.value_in(units.kpc),
                    c='tab:orange', alpha=1, s=1, lw=0)
     
-    plt.savefig(filename)
+    savepath = script_path + '/plots/'
+    
+    plt.savefig(savepath + filename)
 
 def make_galaxies(M_galaxy, R_galaxy, n_halo, n_bulge, n_disk):
     converter = nbody_system.nbody_to_si(M_galaxy, R_galaxy)
     
-    print('Building galaxy 1 ... ', sep=' ', end='', flush=True)
-    galaxy1 = new_galactics_model(n_halo,
-                                  converter,
-                                  #do_scale = True,
-                                  bulge_number_of_particles=n_bulge,
-                                  disk_number_of_particles=n_disk)
-    print('Done', flush=True)
+    widgets = ['Building galaxy 1: ', pbwg.AnimatedMarker(), ' ',
+               pbwg.Timer(), pbwg.EndMsg()]
+    with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
+        galaxy1 = new_galactics_model(n_halo,
+                                      converter,
+                                      #do_scale = True,
+                                      bulge_number_of_particles=n_bulge,
+                                      disk_number_of_particles=n_disk)
     
-    print('Building galaxy 2 ... ', sep=' ', end='', flush=True)
-    galaxy2 = Particles(len(galaxy1))
-    galaxy2.mass = galaxy1.mass
-    galaxy2.position = galaxy1.position
-    galaxy2.velocity = galaxy1.velocity
-    print('Done', flush=True)
+    widgets = ['Building galaxy 2: ', pbwg.AnimatedMarker(),
+               pbwg.EndMsg()]
+    with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
+        galaxy2 = Particles(len(galaxy1))
+        galaxy2.mass = galaxy1.mass
+        galaxy2.position = galaxy1.position
+        galaxy2.velocity = galaxy1.velocity
     
-    print('Adjusting relative velocities and orientations ... ', sep=' ', end='', flush=True)
-    galaxy1.rotate(0., np.pi/2, np.pi/4)
-    galaxy1.position += [100.0, 100, 0] | units.kpc
-    #galaxy1.velocity += [-3000.0, 0.0, -3000.0] | units.km/units.s
-    galaxy1.velocity += [-10.0, 0.0, -10.0] | units.km/units.s
-
-    galaxy2.rotate(np.pi/4, np.pi/4, 0.0)
-    galaxy2.position -= [100.0, 0, 0] | units.kpc
-    galaxy2.velocity -= [0.0, 0.0, 0] | units.km/units.s
-    print('Done', flush=True)
+    widgets = ['Adjusting relative velocities and orientations: ', 
+               pbwg.AnimatedMarker(), pbwg.EndMsg()]
+    with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
+        galaxy1.rotate(0., np.pi/2, np.pi/4)
+        galaxy1.position += [100.0, 100, 0] | units.kpc
+        galaxy1.velocity += [-10.0, 0.0, -10.0] | units.km/units.s
+        galaxy2.rotate(np.pi/4, np.pi/4, 0.0)
+        galaxy2.position -= [100.0, 0, 0] | units.kpc
+        galaxy2.velocity -= [0.0, 0.0, 0] | units.km/units.s
 
     return galaxy1, galaxy2, converter
 
@@ -96,27 +125,27 @@ def simulate_merger(galaxy1, galaxy2, converter, n_halo, t_end):
     
     current_iter = 0
     interval = 0.5 | units.Myr
-    total_iter = t_end/interval
+    total_iter = int(t_end/interval) + 1
     
-    progress = ProgressBar(total_iter, comp_line='Done', 
-                           global_time_measure=True, 
-                           iteration_time_measure=True, 
-                           flush_value=True)
-    progress.show(current_iter, prefix='Step {} of {}:'.format(current_iter, total_iter), suffix=' ... ')
+    widgets = ['Step ', pbwg.SimpleProgress(), ' ',
+               pbwg.Bar(marker='=', tip='>', left='[', right=']', fill=' '), 
+               pbwg.Percentage(), ' - ', pbwg.ETA('ETA'), pbwg.EndMsg()]
+    progress = pbar.ProgressBar(widgets=widgets, maxval=total_iter, fd=sys.stdout).start()
     
     while dynamics_code.model_time < t_end:
         
         current_iter +=1
         
-        progress.start_iteration_measure()
-        
         dynamics_code.evolve_model(dynamics_code.model_time + interval)
                 
-        progress.show(current_iter, prefix='Step {} of {}:'.format(current_iter, total_iter), suffix=' ... ')
+        progress.update(current_iter)
         
+    progress.finish()
+    
     if PLOT == True:
         make_plot(disk1, disk2,
                   "Galaxy_merger_t" + str(t_end.value_in(units.Myr))+"Myr")
+        
     dynamics_code.stop()
 
 
@@ -129,37 +158,4 @@ t_end = 200|units.Myr
 
 galaxy1, galaxy2, converter = make_galaxies(M_galaxy, R_galaxy, n_halo, n_bulge, n_disk)
 simulate_merger(galaxy1, galaxy2, converter, n_halo, t_end)
-
-
-# Error in the terminal:
-# 
-# There are not enough slots available in the system to satisfy the 4
-# slots that were requested by the application:
-# 
-#   /home/al/anaconda3/envs/amuse-rp/bin/python
-# 
-# Either request fewer slots for your application, or make more slots
-# available for use.
-# 
-# A "slot" is the Open MPI term for an allocatable unit where we can
-# launch a process.  The number of slots available are defined by the
-# environment in which Open MPI processes are run:
-# 
-#   1. Hostfile, via "slots=N" clauses (N defaults to number of
-#      processor cores if not provided)
-#   2. The --host command line parameter, via a ":N" suffix on the
-#      hostname (N defaults to 1 if not provided)
-#   3. Resource manager (e.g., SLURM, PBS/Torque, LSF, etc.)
-#   4. If none of a hostfile, the --host command line parameter, or an
-#      RM is present, Open MPI defaults to the number of processor cores
-# 
-# In all the above cases, if you want Open MPI to default to the number
-# of hardware threads instead of the number of processor cores, use the
-# --use-hwthread-cpus option.
-# 
-# Alternatively, you can use the --oversubscribe option to ignore the
-# number of available slots when deciding the number of processes to
-# launch.
-
-
 

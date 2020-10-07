@@ -1,10 +1,10 @@
 # Group-project
 
-Alberto: galaxy models, final implementation
+Alberto: galaxy models, final implementation, galaxy initial conditions
 
-Davey: Solar System, BH code
+Davey: Solar System, BH code, dynamic initial conditions
 
-Zhen: IGM code
+Zhen: IGM code, density gradient
 
 Each initializing function should take in initial conditions as an argument, as output the object(s), the solver, the converter 
 

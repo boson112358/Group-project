@@ -4,8 +4,11 @@
 # In[1]:
 
 
+import numpy as np
+import matplotlib.pyplot as plt
 from amuse.units import units
 from amuse.lab import Particles
+from amuse.units import nbody_system
 from amuse.community.ph4.interface import ph4
 
 
@@ -17,11 +20,12 @@ def MW_and_M31():
     MW = MW_M31[0]
     MW.mass = 1*10**12 | units.MSun
     MW.position = (0,0,0) | units.kpc
-    MW.velosity = (0,0,0) | units.kms
+    MW.velocity = (10,10,0) | units.kms
     M31 = MW_M31[1]
     M31.mass = 1.6*10**12 | units.MSun
     M31.position = (780,0,0) | units.kpc
-    M31.velosity = (0,0,0) | units.kms
+    M31.velocity = (0,0,0) | units.kms
+    return MW_M31
 
 
 # In[3]:
@@ -50,11 +54,13 @@ def resolve_collision(collision_detection, gravity, bodies):
             bodies.synchronize_to(gravity.particles)
 
 
-# In[ ]:
+# In[5]:
 
 
-gravity = ph4()
-gravity.particles.add_particles()#add particles
+galaxies = MW_and_M31()
+converter=nbody_system.nbody_to_si(1.0e12|units.MSun, 100|units.kpc)
+gravity = ph4(converter)
+gravity.particles.add_particles(galaxies)#add particles
 
 stopping_condition = gravity.stopping_conditions.collision_detection
 stopping_condition.enable()
@@ -63,10 +69,13 @@ end_time = 10.0 | units.Myr
 model_time = 0 | units.Myr
 
 while(model_time<end_time):
-    dt = gravity.particles.time_step.min()
+    dt = 1.0 | units.Myr
     model_time += dt
     gravity.evolve_model(model_time)
-    resolve_collision(stopping_condition, gravity, bodies)
+    resolve_collision(stopping_condition, gravity, galaxies)
+    plt.scatter(galaxies.x.value_in(units.kpc),galaxies.y.value_in(units.kpc),c = 'r')
+
+    
 
 gravity.stop()
 

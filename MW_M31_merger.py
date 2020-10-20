@@ -270,7 +270,7 @@ t_end = 200
 galaxy1, galaxy2, converter = make_galaxies(M_galaxy, R_galaxy, n_halo, n_bulge, n_disk)
 stars = nstars(50, 8.27806, 0.10, 230000)
 #simulate_merger(galaxy1, galaxy2, converter, n_halo, t_end)
-mw_and_stars(galaxy1, stars, converter, n_halo, t_end)
+mw_and_stars(galaxy2, stars, converter, n_halo, t_end)
 
 
 

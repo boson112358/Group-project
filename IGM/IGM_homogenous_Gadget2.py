@@ -77,17 +77,17 @@ if not os.path.exists(folder):
 
 # In[5]:
 
-
-sph_code.evolve_model(1.0|units.s)
-print("Done running")
-plt.scatter(sph_code.gas_particles.x.value_in(units.kpc),
-            sph_code.gas_particles.y.value_in(units.kpc),
-            c = 'r')
-plt.scatter(sph_code.dm_particles.x.value_in(units.kpc),
-            sph_code.dm_particles.y.value_in(units.kpc),
-            c = 'b')
-plt.savefig('./plot_IGM/gas_dm_periodic.png')
-print("done plotting")
+def evolve_sph():
+    sph_code.evolve_model(1.0|units.s)
+    print("Done running")
+    plt.scatter(sph_code.gas_particles.x.value_in(units.kpc),
+                sph_code.gas_particles.y.value_in(units.kpc),
+                c = 'r')
+    plt.scatter(sph_code.dm_particles.x.value_in(units.kpc),
+                sph_code.dm_particles.y.value_in(units.kpc),
+                c = 'b')
+    plt.savefig('./plot_IGM/gas_dm_periodic.png')
+    print("done plotting")
 
 
 # In[ ]:

@@ -99,6 +99,27 @@ def make_plot_galstars(disk, stars, filename):
     
     plt.savefig(savepath + filename)
 
+
+def nstars(numparticles, radius, radius_var, vel):  #I kinda messed up, I shouldn't include Sag so we can remove that part and rename
+    particles = Particles(numparticles)
+    i=0
+    while i < numparticles:
+        #here we generate our N bodies, we can change code in here to reflect different things
+        #We can distribut them randomly, have them near eachother, all at the same radius etc.
+        #All particles in x-y plane, this should still be adjusted accordingly
+        
+        #For now I will keep the mass and radius the same and simulate stars at our radius +- a bit
+        angle = random.random()*2*math.pi
+        particles[i].mass = 5 | units.MSun 
+        particles[i].radius = 1.5 | units.RSun   
+        adjusted_rad = radius*(1 + radius_var*(2*(random.random()-0.5)))  #this gives a random radius between 1-radius_var and 1+radius_var times the radius
+        particles[i].position = (adjusted_rad*math.cos(angle),adjusted_rad*math.sin(angle) , 0 ) | units.kpc
+        particles[i].velocity = [math.sin(angle)*vel,-math.cos(angle)*vel,0] | (units.m/units.s)
+        
+        i += 1
+    
+    return particles
+
 def make_galaxies(M_galaxy, R_galaxy, n_halo, n_bulge, n_disk):
     converter = nbody_system.nbody_to_si(M_galaxy, R_galaxy)
     
@@ -174,27 +195,6 @@ def simulate_merger(galaxy1, galaxy2, converter, n_halo, t_end):
     dynamics_code.stop()
 
 
-def nstars(numparticles, radius, radius_var, vel):  #I kinda messed up, I shouldn't include Sag so we can remove that part and rename
-    particles = Particles(numparticles)
-    i=0
-    while i < numparticles:
-        #here we generate our N bodies, we can change code in here to reflect different things
-        #We can distribut them randomly, have them near eachother, all at the same radius etc.
-        #All particles in x-y plane, this should still be adjusted accordingly
-        
-        #For now I will keep the mass and radius the same and simulate stars at our radius +- a bit
-        angle = random.random()*2*math.pi
-        particles[i].mass = 5 | units.MSun 
-        particles[i].radius = 1.5 | units.RSun   
-        adjusted_rad = radius*(1 + radius_var*(2*(random.random()-0.5)))  #this gives a random radius between 1-radius_var and 1+radius_var times the radius
-        particles[i].position = (adjusted_rad*math.cos(angle),adjusted_rad*math.sin(angle) , 0 ) | units.kpc
-        particles[i].velocity = [math.sin(angle)*vel,-math.cos(angle)*vel,0] | (units.m/units.s)
-        
-        i += 1
-    
-    return particles
-
-
 def mw_and_stars(galaxy1, stars, galaxy_converter, n_halo, t_end):
     galaxy_converter = nbody_system.nbody_to_si(1.0e12|units.MSun, 100|units.kpc)
     
@@ -259,18 +259,82 @@ def mw_and_stars(galaxy1, stars, galaxy_converter, n_halo, t_end):
     star_dynamics_code.stop()
 
 
+def merger_and_igm(galaxy1, galaxy2, converter, sph_code, n_halo, t_end):
+    converter = nbody_system.nbody_to_si(1.0e12|units.MSun, 100|units.kpc)
+    
+    dynamics_code = Gadget2(converter, number_of_workers=4)
+    dynamics_code.parameters.epsilon_squared = (100 | units.parsec)**2
+    
+    set1 = dynamics_code.particles.add_particles(galaxy1)
+    set2 = dynamics_code.particles.add_particles(galaxy2)
+    
+    dynamics_code.particles.move_to_center()
+    
+    disk1 = set1[:n_halo]
+    disk2 = set2[:n_halo]
+    
+    if PLOT == True:
+        make_plot(disk1, disk2, "sph_merger_t0")
+    
+    current_iter = 0
+    interval = 0.5 | units.Myr
+    total_iter = int(t_end/interval) + 1
+    
+    gravity_sph = bridge.Bridge(use_threading=False)
+    gravity_sph.add_system(dynamics_code, (sph_code,) )
+    gravity_sph.add_system(sph_code, (dynamics_code,) )
+    gravity_sph.timestep = 0.5 | units.Myr
+    
+    widgets = ['Step ', pbwg.SimpleProgress(), ' ',
+               pbwg.Bar(marker='=', tip='>', left='[', right=']', fill=' '), 
+               pbwg.Percentage(), ' - ', pbwg.ETA('ETA'), pbwg.EndMsg()]
+    progress = pbar.ProgressBar(widgets=widgets, maxval=total_iter, fd=sys.stdout).start()
+    
+    while dynamics_code.model_time < t_end:
+        
+        current_iter +=1
+        
+        gravity_sph.evolve_model(gravity_sph.model_time + interval)
+                
+        progress.update(current_iter)
+        
+    progress.finish()
+    
+    if PLOT == True:
+        make_plot(disk1, disk2,
+                  "sph_merger_t" + str(t_end.value_in(units.Myr))+"Myr")
+        
+    gravity_sph.stop()
+
+
 M_galaxy = 1.0e12 | units.MSun
 R_galaxy = 10 | units.kpc
 n_bulge = 10000
 n_disk = 10000
 n_halo = 20000
-#t_end = 200|units.Myr
-t_end = 200
+t_end = 200|units.Myr
+#t_end = 200
 
 galaxy1, galaxy2, converter = make_galaxies(M_galaxy, R_galaxy, n_halo, n_bulge, n_disk)
 stars = nstars(50, 8.27806, 0.10, 230000)
 #simulate_merger(galaxy1, galaxy2, converter, n_halo, t_end)
-mw_and_stars(galaxy2, stars, converter, n_halo, t_end)
+#mw_and_stars(galaxy2, stars, converter, n_halo, t_end)
+
+
+from IGM import IGM_homogenous_Gadget2 as igm
+
+N1 = 5000
+N2 = 1000
+L = 10 | units.kpc
+rho = 1000 | units.MSun / (units.kpc)**3
+u = 1.6e+15 | (units.m)**2 / (units.s)**2
+
+widgets = ['Building IGM: ', pbwg.AnimatedMarker(),
+               pbwg.EndMsg()]
+with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
+    sph_code = igm.setup_sph_code(Gadget2, N1, N2, L, rho, u)
+
+merger_and_igm(galaxy1, galaxy2, converter, sph_code, n_halo, t_end)
 
 
 

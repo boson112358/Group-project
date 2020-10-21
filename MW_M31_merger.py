@@ -90,8 +90,8 @@ L = 10 | units.kpc
 rho = 1000 | units.MSun / (units.kpc)**3
 u = 1.6e+15 | (units.m)**2 / (units.s)**2
 
-widgets = ['Building IGM: ', pbwg.AnimatedMarker(),
-               pbwg.EndMsg()]
+widgets = ['Building IGM: ', pbwg.AnimatedMarker(), ' ',
+               pbwg.Timer(), pbwg.EndMsg()]
 with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
     sph_code = igm.setup_sph_code(Gadget2, N1, N2, L, rho, u)
 

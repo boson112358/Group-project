@@ -35,6 +35,28 @@ def make_plot(disk1, disk2, script_path, filename):
     plt.savefig(savepath + filename)
     
     
+def make_plot_testdisk(disk1, disk2, test_disk, script_path, filename):
+    x_label = "X [kpc]"
+    y_label = "Y [kpc]"
+    
+    fig = plt.figure()
+    
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.xlim(-300, 300)
+    plt.ylim(-300, 300)
+
+    plt.scatter(disk1.x.value_in(units.kpc), disk1.y.value_in(units.kpc),
+                   c='tab:blue', alpha=1, s=1, lw=0)
+    plt.scatter(disk2.x.value_in(units.kpc), disk2.y.value_in(units.kpc),
+                   c='tab:orange', alpha=1, s=1, lw=0)
+    plt.scatter(test_disk.x.value_in(units.kpc), test_disk.y.value_in(units.kpc),
+                   c='tab:green', alpha=1, s=1, lw=0)
+    
+    savepath = script_path + '/plots/'
+    
+    plt.savefig(savepath + filename)
+    
 def make_plot_galstars(disk, stars, script_path, filename):
     x_label = "X [kpc]"
     y_label = "Y [kpc]"
@@ -77,7 +99,7 @@ def nstars(numparticles, radius, radius_var, vel):  #I kinda messed up, I should
     return particles
 
 
-def make_galaxies(M_galaxy, R_galaxy, n_halo, n_bulge, n_disk):
+def make_galaxies(M_galaxy, R_galaxy, n_halo, n_bulge, n_disk, script_path, test=False):
     converter = nbody_system.nbody_to_si(M_galaxy, R_galaxy)
     
     widgets = ['Building galaxy 1: ', pbwg.AnimatedMarker(), ' ',
@@ -106,20 +128,43 @@ def make_galaxies(M_galaxy, R_galaxy, n_halo, n_bulge, n_disk):
         galaxy2.rotate(np.pi/4, np.pi/4, 0.0)
         galaxy2.position -= [100.0, 0, 0] | units.kpc
         galaxy2.velocity -= [0.0, 0.0, 0] | units.km/units.s
+    
+    if not test:
+        galaxy1_name = script_path + '/galaxies/data/M31_full'
+        galaxy2_name = script_path + '/galaxies/data/MW_full'
+    if test:
+        galaxy1_name = script_path + '/galaxies/data/M31_test'
+        galaxy2_name = script_path + '/galaxies/data/MW_test'
+    
+    widgets = ['Saving galaxies data: ', 
+               pbwg.AnimatedMarker(), pbwg.EndMsg()]
+    with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
+        write_set_to_file(galaxy1, galaxy1_name, 'hdf5')
+        write_set_to_file(galaxy2, galaxy2_name, 'hdf5')
 
     return galaxy1, galaxy2, converter
+
+
+def test_particles(galaxy, n_halo, n_bulge, n_disk):
+    _dsk = Particles(len(galaxy))
+    _dsk.mass = galaxy.mass
+    _dsk.position = galaxy.position
+    _dsk.velocity = galaxy.velocity
+    disk = _dsk[n_bulge:n_halo]
+    return disk
 
 
 def simulate_merger(galaxy1, galaxy2, converter, n_halo, t_end, script_path, plot=False):
     converter = nbody_system.nbody_to_si(1.0e12|units.MSun, 100|units.kpc)
     
-    dynamics_code = Gadget2(converter, number_of_workers=4)
+    dynamics_code = Fi(converter, number_of_workers=1)
     dynamics_code.parameters.epsilon_squared = (100 | units.parsec)**2
     
     set1 = dynamics_code.particles.add_particles(galaxy1)
     set2 = dynamics_code.particles.add_particles(galaxy2)
     
     dynamics_code.particles.move_to_center()
+    dynamics_code.timestep = 0.5 | units.Myr
     
     disk1 = set1[:n_halo]
     disk2 = set2[:n_halo]
@@ -129,7 +174,7 @@ def simulate_merger(galaxy1, galaxy2, converter, n_halo, t_end, script_path, plo
     
     current_iter = 0
     interval = 0.5 | units.Myr
-    total_iter = int(t_end/interval) + 1
+    total_iter = int(t_end/interval) + 10
     
     widgets = ['Step ', pbwg.SimpleProgress(), ' ',
                pbwg.Bar(marker='=', tip='>', left='[', right=']', fill=' '), 
@@ -139,6 +184,9 @@ def simulate_merger(galaxy1, galaxy2, converter, n_halo, t_end, script_path, plo
     while dynamics_code.model_time < t_end:
         
         current_iter +=1
+        
+        if current_iter >= progress.maxval:
+            progress.maxval = current_iter + 1
         
         dynamics_code.evolve_model(dynamics_code.model_time + interval)
                 
@@ -153,10 +201,62 @@ def simulate_merger(galaxy1, galaxy2, converter, n_halo, t_end, script_path, plo
     dynamics_code.stop()
     
 
+def simulate_merger_with_particles(galaxy1, galaxy2, converter, n_halo, n_bulge, n_disk, t_end, script_path, plot=False):
+    converter = nbody_system.nbody_to_si(1.0e12|units.MSun, 100|units.kpc)
+    
+    dynamics_code = Fi(converter, number_of_workers=1)
+    dynamics_code.parameters.epsilon_squared = (100 | units.parsec)**2
+    set1 = dynamics_code.particles.add_particles(galaxy1)
+    set2 = dynamics_code.particles.add_particles(galaxy2)
+    
+    dynamics_code.particles.move_to_center()
+    
+    test_disk = test_particles(set2, n_halo, n_bulge, n_disk)
+    
+    test_code = Fi(converter, number_of_workers=1)
+    test_code.parameters.epsilon_squared = (100 | units.parsec)**2
+    set3 = test_code.particles.add_particles(test_disk)
+    
+    gravity = bridge.Bridge(use_threading=False)
+    gravity.add_system(test_code, (dynamics_code,) )
+    gravity.timestep = 0.5 | units.Myr
+    
+    disk1 = set1[:n_halo]
+    disk2 = set2[:n_halo]
+    
+    if plot == True:
+        make_plot_testdisk(disk1, disk2, set3, script_path, "test_merger_t0")
+    
+    current_iter = 0
+    interval = 0.5 | units.Myr
+    total_iter = int(t_end/interval) + 10
+    
+    widgets = ['Step ', pbwg.SimpleProgress(), ' ',
+               pbwg.Bar(marker='=', tip='>', left='[', right=']', fill=' '), 
+               pbwg.Percentage(), ' - ', pbwg.ETA('ETA'), pbwg.EndMsg()]
+    progress = pbar.ProgressBar(widgets=widgets, maxval=total_iter, fd=sys.stdout).start()
+    
+    while gravity.model_time < t_end:
+        
+        current_iter +=1
+        
+        gravity.evolve_model(gravity.model_time + interval)
+                
+        progress.update(current_iter)
+        
+    progress.finish()
+    
+    if plot == True:
+        make_plot_testdisk(disk1, disk2, set3, script_path,
+                  "test_merger_t" + str(t_end.value_in(units.Myr))+"Myr")
+        
+    gravity.stop()
+    
+
 def mw_and_stars(galaxy1, stars, galaxy_converter, n_halo, t_end, script_path, plot=False):
     galaxy_converter = nbody_system.nbody_to_si(1.0e12|units.MSun, 100|units.kpc)
     
-    galaxy_dynamics_code = Gadget2(galaxy_converter, number_of_workers=4)
+    galaxy_dynamics_code = Fi(galaxy_converter, number_of_workers=4)
     galaxy_dynamics_code.parameters.epsilon_squared = (100 | units.parsec)**2
     
     set1 = galaxy_dynamics_code.particles.add_particles(galaxy1)
@@ -220,7 +320,7 @@ def mw_and_stars(galaxy1, stars, galaxy_converter, n_halo, t_end, script_path, p
 def merger_and_igm(galaxy1, galaxy2, converter, sph_code, n_halo, t_end, script_path, plot=False):
     converter = nbody_system.nbody_to_si(1.0e12|units.MSun, 100|units.kpc)
     
-    dynamics_code = Gadget2(converter, number_of_workers=4)
+    dynamics_code = Fi(converter, number_of_workers=4)
     dynamics_code.parameters.epsilon_squared = (100 | units.parsec)**2
     
     set1 = dynamics_code.particles.add_particles(galaxy1)

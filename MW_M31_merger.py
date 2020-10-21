@@ -24,6 +24,12 @@ script_path = os.path.dirname(os.path.abspath(filename))
 sys.path.insert(1, script_path + '/python-progressbar/')
 
 
+folder = script_path + '/plots'
+
+if not os.path.exists(folder):
+    os.makedirs(folder)
+
+
 from amuse.lab import *
 from amuse.ext.galactics_model import new_galactics_model
 from amuse.couple import bridge

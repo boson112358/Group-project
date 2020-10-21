@@ -13,6 +13,8 @@ from amuse.lab import Particles
 from amuse.community.ph4.interface import ph4
 from amuse.community.gadget2.interface import Gadget2
 
+IMPORT = True
+
 
 # In[2]:
 
@@ -55,24 +57,13 @@ def setup_sph_code(sph_code, N1, N2, L, rho,u):
 
 # In[3]:
 
-
-N1 = 5000
-N2 = 1000
-L = 10 | units.kpc
-rho = 1000 | units.MSun / (units.kpc)**3
-u = 1.6e+15 | (units.m)**2 / (units.s)**2
-sph_code = setup_sph_code(Gadget2, N1, N2, L, rho, u)
-
-
-# In[4]:
-
-
-import os
-
-folder = os.getcwd()+ '/plot_IGM'
-
-if not os.path.exists(folder):
-    os.makedirs(folder)
+if not IMPORT:
+    N1 = 5000
+    N2 = 1000
+    L = 10 | units.kpc
+    rho = 1000 | units.MSun / (units.kpc)**3
+    u = 1.6e+15 | (units.m)**2 / (units.s)**2
+    sph_code = setup_sph_code(Gadget2, N1, N2, L, rho, u)
 
 
 # In[5]:
@@ -86,7 +77,7 @@ def evolve_sph():
     plt.scatter(sph_code.dm_particles.x.value_in(units.kpc),
                 sph_code.dm_particles.y.value_in(units.kpc),
                 c = 'b')
-    plt.savefig('./plot_IGM/gas_dm_periodic.png')
+    plt.savefig('./plots/gas_dm_periodic.png')
     print("done plotting")
 
 

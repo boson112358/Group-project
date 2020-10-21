@@ -6,10 +6,12 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+from amuse.plot import plot
 from amuse.units import units
 from amuse.lab import Particles
 from amuse.units import nbody_system
 from amuse.community.ph4.interface import ph4
+from amuse.community.gadget2.interface import Gadget2
 
 
 # In[2]:
@@ -58,24 +60,65 @@ def resolve_collision(collision_detection, gravity, bodies):
 
 
 galaxies = MW_and_M31()
+
 converter=nbody_system.nbody_to_si(1.0e12|units.MSun, 100|units.kpc)
 gravity = ph4(converter)
 gravity.particles.add_particles(galaxies)#add particles
+ch_g2l = gravity.particles.new_channel_to(galaxies)
 
 stopping_condition = gravity.stopping_conditions.collision_detection
 stopping_condition.enable()
 
-end_time = 10.0 | units.Myr
+end_time = 6600.0 | units.Myr
 model_time = 0 | units.Myr
+x = [] | units.kpc
+y = [] | units.kpc
 
 while(model_time<end_time):
-    dt = 1.0 | units.Myr
+    dt = 10.0 | units.Myr
     model_time += dt
     gravity.evolve_model(model_time)
+    ch_g2l.copy()
+    x.append(galaxies.x)
+    y.append(galaxies.y)
     resolve_collision(stopping_condition, gravity, galaxies)
-    plt.scatter(galaxies.x.value_in(units.kpc),galaxies.y.value_in(units.kpc),c = 'r')
+    
+    
+
+#plt.scatter(galaxies.x.value_in(units.kpc),galaxies.y.value_in(units.kpc),c = 'r')
+plot(x, y, lw=1)
+plt.gca().set_aspect("equal", adjustable="box")
+plt.show()
 
     
 
 gravity.stop()
+
+
+# In[6]:
+
+
+# from amuse.lab import BHTree
+# galaxies = MW_and_M31()
+# converter=nbody_system.nbody_to_si(galaxies.mass.sum(), galaxies[1].position.length())
+# gravity = BHTree(converter)
+# gravity.particles.add_particles(galaxies)#add particles
+# ch_g2l = gravity.particles.new_channel_to(galaxies)
+# stopping_condition = gravity.stopping_conditions.collision_detection
+# stopping_condition.enable()
+# timestep = 10 #units Myr
+# end_time = 8000.0 #units Myr
+# gravity.timestep = timestep |units.Myr
+# times = numpy.arange(0., end_time, timestep) | units.Myr
+# x = [] | units.kpc
+# y = [] | units.kpc
+# for time in times:
+#     gravity.evolve_model(time)
+#     ch_g2l.copy()
+#     x.append(galaxies.x)
+#     y.append(galaxies.y)
+# gravity.stop()
+# plot(x, y, lw=1)
+# pyplot.gca().set_aspect("equal", adjustable="box")
+# pyplot.show()
 

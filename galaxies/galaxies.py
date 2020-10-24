@@ -22,8 +22,8 @@ def make_plot(disk1, disk2, script_path, filename):
     
     plt.xlabel(x_label)
     plt.ylabel(y_label)
-    plt.xlim(-300, 300)
-    plt.ylim(-300, 300)
+    plt.xlim(-760, 760)
+    plt.ylim(-760, 760)
 
     plt.scatter(disk1.x.value_in(units.kpc), disk1.y.value_in(units.kpc),
                    c='tab:blue', alpha=1, s=1, lw=0)
@@ -56,22 +56,25 @@ def make_plot_testdisk(disk1, disk2, test_disk, script_path, filename):
     savepath = script_path + '/plots/'
     
     plt.savefig(savepath + filename)
+
     
 def make_plot_galstars(disk, stars, script_path, filename):
     x_label = "X [kpc]"
     y_label = "Y [kpc]"
     
     fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.set_aspect('equal')
     
     plt.xlabel(x_label)
     plt.ylabel(y_label)
-    plt.xlim(-300, 300)
-    plt.ylim(-300, 300)
+    plt.xlim(-200, 200)
+    plt.ylim(-200, 200)
 
-    plt.scatter(disk.x.value_in(units.kpc), disk.y.value_in(units.kpc),
+    ax.scatter(disk.x.value_in(units.kpc), disk.y.value_in(units.kpc),
                    c='tab:blue', alpha=1, s=1, lw=0)
-    plt.scatter(stars.x.value_in(units.kpc), stars.y.value_in(units.kpc),
-                   c='tab:orange', alpha=1, s=1, lw=0)
+    ax.scatter(stars.x.value_in(units.kpc), stars.y.value_in(units.kpc),
+                   c='tab:orange', alpha=1, marker='.', lw=2)
     
     savepath = script_path + '/plots/'
     
@@ -89,8 +92,9 @@ def nstars(numparticles, radius, radius_var, vel):  #I kinda messed up, I should
         #For now I will keep the mass and radius the same and simulate stars at our radius +- a bit
         angle = random.random()*2*math.pi
         particles[i].mass = 5 | units.MSun 
-        particles[i].radius = 1.5 | units.RSun   
-        adjusted_rad = radius*(1 + radius_var*(2*(random.random()-0.5)))  #this gives a random radius between 1-radius_var and 1+radius_var times the radius
+        particles[i].radius = 1.5 | units.RSun
+        #this gives a random radius between 1-radius_var and 1+radius_var times the radius
+        adjusted_rad = radius*(1 + radius_var*(2*(random.random()-0.5)))  
         particles[i].position = (adjusted_rad*math.cos(angle),adjusted_rad*math.sin(angle) , 0 ) | units.kpc
         particles[i].velocity = [math.sin(angle)*vel,-math.cos(angle)*vel,0] | (units.m/units.s)
         
@@ -99,7 +103,10 @@ def nstars(numparticles, radius, radius_var, vel):  #I kinda messed up, I should
     return particles
 
 
-def make_galaxies(M_galaxy, R_galaxy, n_halo, n_bulge, n_disk, script_path, test=False):
+def make_galaxies(M_galaxy, R_galaxy, n_halo, n_bulge, n_disk, script_path, 
+                  separation=780, 
+                  M31_velocity=50, 
+                  test=False):
     converter = nbody_system.nbody_to_si(M_galaxy, R_galaxy)
     
     widgets = ['Building galaxy 1: ', pbwg.AnimatedMarker(), ' ',
@@ -123,11 +130,17 @@ def make_galaxies(M_galaxy, R_galaxy, n_halo, n_bulge, n_disk, script_path, test
                pbwg.AnimatedMarker(), pbwg.EndMsg()]
     with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
         galaxy1.rotate(0., np.pi/2, np.pi/4)
-        galaxy1.position += [100.0, 100, 0] | units.kpc
-        galaxy1.velocity += [-10.0, 0.0, -10.0] | units.km/units.s
-        galaxy2.rotate(np.pi/4, np.pi/4, 0.0)
-        galaxy2.position -= [100.0, 0, 0] | units.kpc
-        galaxy2.velocity -= [0.0, 0.0, 0] | units.km/units.s
+        galaxy1.position += [np.sqrt(0.5 * separation**2),
+                             np.sqrt(0.5 * separation**2),
+                             0] | units.kpc
+        galaxy1.velocity += [-np.sqrt(0.5 * M31_velocity**2),
+                             -np.sqrt(0.5 * M31_velocity**2),
+                             0] | (units.km/units.s)
+        
+        #galaxy2.rotate(np.pi/4, np.pi/4, 0.0)
+        galaxy1.position -= [100., 100., 0] | units.kpc
+        galaxy2.position -= [100., 100., 0] | units.kpc
+        #galaxy2.velocity -= [0.0, 0.0, 0] | units.km/units.s
     
     if not test:
         galaxy1_name = script_path + '/galaxies/data/M31_full'
@@ -157,14 +170,14 @@ def test_particles(galaxy, n_halo, n_bulge, n_disk):
 def simulate_merger(galaxy1, galaxy2, converter, n_halo, t_end, script_path, plot=False):
     converter = nbody_system.nbody_to_si(1.0e12|units.MSun, 100|units.kpc)
     
-    dynamics_code = Fi(converter, number_of_workers=1)
+    dynamics_code = Gadget2(converter, number_of_workers=4)
     dynamics_code.parameters.epsilon_squared = (100 | units.parsec)**2
     
-    set1 = dynamics_code.particles.add_particles(galaxy1)
-    set2 = dynamics_code.particles.add_particles(galaxy2)
+    set1 = dynamics_code.dm_particles.add_particles(galaxy1)
+    set2 = dynamics_code.dm_particles.add_particles(galaxy2)
     
     dynamics_code.particles.move_to_center()
-    dynamics_code.timestep = 0.5 | units.Myr
+    #dynamics_code.parameters.timestep = 0.5 | units.Myr
     
     disk1 = set1[:n_halo]
     disk2 = set2[:n_halo]
@@ -174,7 +187,8 @@ def simulate_merger(galaxy1, galaxy2, converter, n_halo, t_end, script_path, plo
     
     current_iter = 0
     interval = 0.5 | units.Myr
-    total_iter = int(t_end/interval) + 10
+    t_end_in_Myr = t_end.as_quantity_in(units.Gyr)
+    total_iter = int(t_end_in_Myr/interval) + 1
     
     widgets = ['Step ', pbwg.SimpleProgress(), ' ',
                pbwg.Bar(marker='=', tip='>', left='[', right=']', fill=' '), 
@@ -185,18 +199,56 @@ def simulate_merger(galaxy1, galaxy2, converter, n_halo, t_end, script_path, plo
         
         current_iter +=1
         
-        if current_iter >= progress.maxval:
-            progress.maxval = current_iter + 1
-        
         dynamics_code.evolve_model(dynamics_code.model_time + interval)
-                
+        
+        if dynamics_code.model_time.value_in(units.Myr) == 100:
+                if plot == True:
+                    make_plot(disk1, disk2, script_path,
+                              "MW_M31_merger_t" + str(dynamics_code.model_time.value_in(units.Myr))+"Myr")
+        if dynamics_code.model_time.value_in(units.Myr) == 200:
+                if plot == True:
+                    make_plot(disk1, disk2, script_path,
+                              "MW_M31_merger_t" + str(dynamics_code.model_time.value_in(units.Myr))+"Myr")
+        if dynamics_code.model_time.value_in(units.Myr) == 300:
+                if plot == True:
+                    make_plot(disk1, disk2, script_path,
+                              "MW_M31_merger_t" + str(dynamics_code.model_time.value_in(units.Myr))+"Myr")
+        if dynamics_code.model_time.value_in(units.Myr) == 400:
+                if plot == True:
+                    make_plot(disk1, disk2, script_path,
+                              "MW_M31_merger_t" + str(dynamics_code.model_time.value_in(units.Myr))+"Myr")
+        if dynamics_code.model_time.value_in(units.Myr) == 500:
+                if plot == True:
+                    make_plot(disk1, disk2, script_path,
+                              "MW_M31_merger_t" + str(dynamics_code.model_time.value_in(units.Myr))+"Myr")
+        if dynamics_code.model_time.value_in(units.Myr) == 600:
+                if plot == True:
+                    make_plot(disk1, disk2, script_path,
+                              "MW_M31_merger_t" + str(dynamics_code.model_time.value_in(units.Myr))+"Myr")
+        if dynamics_code.model_time.value_in(units.Myr) == 700:
+                if plot == True:
+                    make_plot(disk1, disk2, script_path,
+                              "MW_M31_merger_t" + str(dynamics_code.model_time.value_in(units.Myr))+"Myr")
+        if dynamics_code.model_time.value_in(units.Myr) == 800:
+                if plot == True:
+                    make_plot(disk1, disk2, script_path,
+                              "MW_M31_merger_t" + str(dynamics_code.model_time.value_in(units.Myr))+"Myr")
+        if dynamics_code.model_time.value_in(units.Myr) == 900:
+                if plot == True:
+                    make_plot(disk1, disk2, script_path,
+                              "MW_M31_merger_t" + str(dynamics_code.model_time.value_in(units.Myr))+"Myr")
+        if dynamics_code.model_time.value_in(units.Myr) == 1000:
+                if plot == True:
+                    make_plot(disk1, disk2, script_path,
+                              "MW_M31_merger_t" + str(dynamics_code.model_time.value_in(units.Myr))+"Myr")
+        
         progress.update(current_iter)
         
     progress.finish()
     
     if plot == True:
         make_plot(disk1, disk2, script_path,
-                  "Galaxy_merger_t" + str(t_end.value_in(units.Myr))+"Myr")
+                  "MW_M31_merger_t" + str(t_end.value_in(units.Myr))+"Myr")
         
     dynamics_code.stop()
     
@@ -204,10 +256,10 @@ def simulate_merger(galaxy1, galaxy2, converter, n_halo, t_end, script_path, plo
 def simulate_merger_with_particles(galaxy1, galaxy2, converter, n_halo, n_bulge, n_disk, t_end, script_path, plot=False):
     converter = nbody_system.nbody_to_si(1.0e12|units.MSun, 100|units.kpc)
     
-    dynamics_code = Fi(converter, number_of_workers=1)
+    dynamics_code = Fi(converter, redirection='none', number_of_workers=1)
     dynamics_code.parameters.epsilon_squared = (100 | units.parsec)**2
-    set1 = dynamics_code.particles.add_particles(galaxy1)
-    set2 = dynamics_code.particles.add_particles(galaxy2)
+    set1 = dynamics_code.dm_particles.add_particles(galaxy1)
+    set2 = dynamics_code.dm_particles.add_particles(galaxy2)
     
     dynamics_code.particles.move_to_center()
     
@@ -215,7 +267,7 @@ def simulate_merger_with_particles(galaxy1, galaxy2, converter, n_halo, n_bulge,
     
     test_code = Fi(converter, number_of_workers=1)
     test_code.parameters.epsilon_squared = (100 | units.parsec)**2
-    set3 = test_code.particles.add_particles(test_disk)
+    set3 = test_code.dm_particles.add_particles(test_disk)
     
     gravity = bridge.Bridge(use_threading=False)
     gravity.add_system(test_code, (dynamics_code,) )
@@ -229,7 +281,7 @@ def simulate_merger_with_particles(galaxy1, galaxy2, converter, n_halo, n_bulge,
     
     current_iter = 0
     interval = 0.5 | units.Myr
-    total_iter = int(t_end/interval) + 10
+    total_iter = int(t_end/interval) + 1
     
     widgets = ['Step ', pbwg.SimpleProgress(), ' ',
                pbwg.Bar(marker='=', tip='>', left='[', right=']', fill=' '), 
@@ -253,10 +305,14 @@ def simulate_merger_with_particles(galaxy1, galaxy2, converter, n_halo, n_bulge,
     gravity.stop()
     
 
-def mw_and_stars(galaxy1, stars, galaxy_converter, n_halo, t_end, script_path, plot=False):
+def mw_and_stars(galaxy1, stars, galaxy_converter, star_solver, n_halo, t_end, script_path, plot=False):
+    leapfrog = True
+    if isinstance(star_solver, (BHTree, ph4)):
+        leapfrog = False
+    
     galaxy_converter = nbody_system.nbody_to_si(1.0e12|units.MSun, 100|units.kpc)
     
-    galaxy_dynamics_code = Fi(galaxy_converter, number_of_workers=4)
+    galaxy_dynamics_code = Fi(galaxy_converter, redirection='none', number_of_workers=1)
     galaxy_dynamics_code.parameters.epsilon_squared = (100 | units.parsec)**2
     
     set1 = galaxy_dynamics_code.particles.add_particles(galaxy1)
@@ -265,18 +321,18 @@ def mw_and_stars(galaxy1, stars, galaxy_converter, n_halo, t_end, script_path, p
     
     disk1 = set1[:n_halo]
     
-    star_converter=nbody_system.nbody_to_si(stars.mass.sum(), 
-                                   stars.position.length())
-
-    star_dynamics_code = BHTree(star_converter)
-    star_dynamics_code.particles.add_particles(stars)
-    ch_g2l = star_dynamics_code.particles.new_channel_to(stars)
-    #star_dynamics_code.timestep = 1|units.Myr
+    if leapfrog:
+        galaxy_dynamics_code.parameters.timestep = 0.5 | units.Myr
+    else:
+        star_converter=nbody_system.nbody_to_si(stars.mass.sum(), 
+                                                stars.position.length())
+        star_dynamics_code = star_solver(star_converter)
+        star_dynamics_code.particles.add_particles(stars)
+        ch_g2l = star_dynamics_code.particles.new_channel_to(stars)
     
-    gravity = bridge.Bridge(use_threading=False)
-    gravity.add_system(star_dynamics_code, (galaxy_dynamics_code,) )
-    gravity.add_system(galaxy_dynamics_code, (star_dynamics_code,) )
-    gravity.timestep = 0.5 | units.Myr
+        gravity = bridge.Bridge(use_threading=False)
+        gravity.add_system(star_dynamics_code, (galaxy_dynamics_code,) )
+        gravity.timestep = 0.5 | units.Myr
     
     if plot == True:
         make_plot_galstars(disk1, stars, script_path, "galstars_t0")
@@ -286,9 +342,11 @@ def mw_and_stars(galaxy1, stars, galaxy_converter, n_halo, t_end, script_path, p
     
     current_iter = 0
     interval = 0.5
-    total_iter = t_end/interval + 1
+    total_iter = int(t_end/(interval | units.Myr)) + 1
+    t_end_scalar = t_end.value_in(units.Myr)
+    #print(t_end_scalar)
     
-    times = np.arange(0., t_end, interval) | units.Myr
+    times = np.arange(0., t_end_scalar, interval) | units.Myr
     
     widgets = ['Step ', pbwg.SimpleProgress(), ' ',
                pbwg.Bar(marker='=', tip='>', left='[', right=']', fill=' '), 
@@ -297,11 +355,15 @@ def mw_and_stars(galaxy1, stars, galaxy_converter, n_halo, t_end, script_path, p
     
     for time in times:
         
+        if leapfrog:
+            galaxy_dynamics_code.evolve_model(time)
+            star_solver(current_iter, stars, galaxy_dynamics_code)
+        else:
+            gravity.evolve_model(time)
+            ch_g2l.copy()
+            
         current_iter +=1
         
-        gravity.evolve_model(time)
-        
-        ch_g2l.copy()
         x.append(stars.x)
         y.append(stars.y)
                 
@@ -312,9 +374,10 @@ def mw_and_stars(galaxy1, stars, galaxy_converter, n_halo, t_end, script_path, p
     if plot == True:
         make_plot_galstars(disk1, stars, script_path,
                   "galstars_t" + str(t_end.value_in(units.Myr))+"Myr")
-        
+    
     galaxy_dynamics_code.stop()
-    star_dynamics_code.stop()
+    if not leapfrog:
+        star_dynamics_code.stop()
 
 
 def merger_and_igm(galaxy1, galaxy2, converter, sph_code, n_halo, t_end, script_path, plot=False):

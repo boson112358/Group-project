@@ -14,22 +14,24 @@ import random
 import math
 
 import inspect
-import subprocess
 import sys
 
 #finds script path
 filename = inspect.getframeinfo(inspect.currentframe()).filename
-script_path = os.path.dirname(os.path.abspath(filename))
+SCRIPT_PATH = os.path.dirname(os.path.abspath(filename))
 #add progressbar path to possible paths to import modules
-sys.path.insert(1, script_path + '/python-progressbar/')
+sys.path.insert(1, SCRIPT_PATH + '/python-progressbar/')
 
 
-plot_folder = script_path + '/plots'
+plot_folders = [SCRIPT_PATH + '/plots', 
+                SCRIPT_PATH + '/plots/merger_plots',
+                SCRIPT_PATH + '/plots/solar_system_plots']
 
-if not os.path.exists(plot_folder):
-    os.makedirs(plot_folder)
+for folder in plot_folders:
+    if not os.path.exists(folder):
+        os.makedirs(folder)
     
-gal_folder = script_path + '/galaxies/data'
+gal_folder = SCRIPT_PATH + '/galaxies/data'
 
 if not os.path.exists(gal_folder):
     os.makedirs(gal_folder)
@@ -89,7 +91,7 @@ import progressbar.widgets as pbwg
 #Galaxies starting conditions
 M_galaxy = 1.0e12 | units.MSun
 R_galaxy = 10 | units.kpc
-MW_velocity = (0,0,0) | (units.km/units.s)       #Velocity at which the milkyway is traveling
+MW_velocity_vector = (0, 0, 0) | (units.km/units.s)       #Velocity at which the milkyway is traveling
 t_end = 1100 | units.Myr
 
 #Solar system starting conditions
@@ -120,11 +122,11 @@ if not TEST:
     n_disk = 10000
     n_halo = 20000
     
-    mw_data = script_path + '/galaxies/data/MW_full' 
-    m31_data = script_path + '/galaxies/data/M31_full'
+    mw_data = SCRIPT_PATH + '/galaxies/data/MW_full' 
+    m31_data = SCRIPT_PATH + '/galaxies/data/M31_full'
 
     if not os.path.exists(mw_data) and not os.path.exists(m31_data):
-        M31, MW, converter = gal.make_galaxies(M_galaxy, R_galaxy, n_halo, n_bulge, n_disk, script_path, test=TEST)
+        M31, MW, converter = gal.make_galaxies(M_galaxy, R_galaxy, n_halo, n_bulge, n_disk, SCRIPT_PATH, test=TEST)
         
     if os.path.exists(mw_data) and os.path.exists(m31_data):
         widgets = ['Loading galaxies data: ', pbwg.AnimatedMarker(), pbwg.EndMsg()]
@@ -139,11 +141,11 @@ if TEST:
     n_disk = 750
     n_halo = 1500
     
-    mw_data = script_path + '/galaxies/data/MW_test' 
-    m31_data = script_path + '/galaxies/data/M31_test'
+    mw_data = SCRIPT_PATH + '/galaxies/data/MW_test' 
+    m31_data = SCRIPT_PATH + '/galaxies/data/M31_test'
 
     if not os.path.exists(mw_data) and not os.path.exists(m31_data):
-        M31, MW, converter = gal.make_galaxies(M_galaxy, R_galaxy, n_halo, n_bulge, n_disk, script_path, test=TEST)
+        M31, MW, converter = gal.make_galaxies(M_galaxy, R_galaxy, n_halo, n_bulge, n_disk, SCRIPT_PATH, test=TEST)
         
     if os.path.exists(mw_data) and os.path.exists(m31_data):
         widgets = ['Loading galaxies data: ', pbwg.AnimatedMarker(), pbwg.EndMsg()]
@@ -155,19 +157,20 @@ if TEST:
 
 if all(value == False for value in [SOLAR, DISK, IGM]):
     print('Simulating merger with no additional components ...', flush=True)
-    gal.simulate_merger(M31, MW, converter, n_halo, t_end, script_path, plot=PLOT)
+    gal.simulate_merger(M31, MW, converter, n_halo, t_end, SCRIPT_PATH, plot=PLOT)
     
 if DISK:
     print('Simulating merger with disk test particles ...', flush=True)
     test_disk = gal.test_particles(MW, n_halo, n_bulge, n_disk)
-    gal.simulate_merger_with_particles(M31, MW, converter, n_halo, n_bulge, n_disk, t_end, script_path, plot=PLOT)
+    gal.simulate_merger_with_particles(M31, MW, converter, n_halo, n_bulge, n_disk, t_end, SCRIPT_PATH, plot=PLOT)
 
 if SOLAR:
     print('Simulating MW with solar system ...', flush=True)
-    MW.position += [100.0, 0, 0] | units.kpc
-    MW.rotate(-np.pi/4, -np.pi/4, 0.0)
-    stars = sol.make_solar_system(n_stars, solar_position, system_radius, MW_velocity, solar_tang_velocity)
-    gal.mw_and_stars(MW, stars, converter, sol.leapfrog_alg, n_halo, t_end, script_path, plot=PLOT)
+    MW.position += [100.0, 100.0, 0] | units.kpc
+    t_end = 400 | units.Myr
+    #MW.rotate(-np.pi/4, -np.pi/4, 0.0)
+    stars = sol.make_solar_system(n_stars, solar_position, system_radius, MW_velocity_vector, solar_tang_velocity)
+    gal.mw_and_stars(MW, stars, converter, sol.leapfrog_alg, n_halo, t_end, SCRIPT_PATH, plot=PLOT)
 
 
 if IGM:
@@ -177,5 +180,5 @@ if IGM:
     with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
         sph_code = igm.setup_sph_code(Gadget2, N1, N2, L, rho, u)
 
-    gal.merger_and_igm(galaxy1, galaxy2, converter, sph_code, n_halo, t_end, script_path, plot=PLOT)
+    gal.merger_and_igm(galaxy1, galaxy2, converter, sph_code, n_halo, t_end, SCRIPT_PATH, plot=PLOT)
 

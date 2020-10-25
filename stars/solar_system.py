@@ -12,7 +12,7 @@ from amuse.community.ph4.interface import ph4
 #If we want to use different position we have to make sure to properly change the velocity.
 #I also assumed the velocity is roughly constant throughout the neighbourradius which only for small r is the case
 
-def make_solar_system(N, solar_position, system_radius, MW_velocity, solar_tang_velocity):
+def make_solar_system(N, solar_position, system_radius, galaxy_velocity, solar_tang_velocity):
     """
     here we generate our N bodies, we can change code in here to reflect different things
     We can distribut them randomly, have them near eachother, all at the same radius etc.
@@ -39,9 +39,9 @@ def make_solar_system(N, solar_position, system_radius, MW_velocity, solar_tang_
         
         #print(360*angle/(2*math.pi)) you can check that the angles are correct this way
         
-        body.velocity = [math.sin(angle) * solar_tang_velocity + MW_velocity[0], 
-                         - math.cos(angle) * solar_tang_velocity + MW_velocity[1], 
-                         MW_velocity[2]] 
+        body.velocity = [math.sin(angle) * solar_tang_velocity + galaxy_velocity[0], 
+                         - math.cos(angle) * solar_tang_velocity + galaxy_velocity[1], 
+                         galaxy_velocity[2]] 
     return particles
 
 

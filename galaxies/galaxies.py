@@ -9,38 +9,41 @@ from amuse.ext.galactics_model import new_galactics_model
 from amuse.couple import bridge
 
 #progressbar import
-
 import progressbar as pbar
 import progressbar.widgets as pbwg
 
 
-def make_plot(disk1, disk2, script_path, filename):
+def make_plot(disk1, disk2, title, script_path, filename):
     x_label = "X [kpc]"
     y_label = "Y [kpc]"
     
     fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.set_aspect('equal')
     
+    plt.title(title)
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     plt.xlim(-760, 760)
     plt.ylim(-760, 760)
 
-    plt.scatter(disk1.x.value_in(units.kpc), disk1.y.value_in(units.kpc),
+    ax.scatter(disk1.x.value_in(units.kpc), disk1.y.value_in(units.kpc),
                    c='tab:blue', alpha=1, s=1, lw=0)
-    plt.scatter(disk2.x.value_in(units.kpc), disk2.y.value_in(units.kpc),
+    ax.scatter(disk2.x.value_in(units.kpc), disk2.y.value_in(units.kpc),
                    c='tab:orange', alpha=1, s=1, lw=0)
     
-    savepath = script_path + '/plots/'
+    savepath = script_path + '/plots/merger_plots/'
     
     plt.savefig(savepath + filename)
     
     
-def make_plot_testdisk(disk1, disk2, test_disk, script_path, filename):
+def make_plot_testdisk(disk1, disk2, test_disk, title, script_path, filename):
     x_label = "X [kpc]"
     y_label = "Y [kpc]"
     
     fig = plt.figure()
     
+    plt.title(title)
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     plt.xlim(-300, 300)
@@ -58,7 +61,7 @@ def make_plot_testdisk(disk1, disk2, test_disk, script_path, filename):
     plt.savefig(savepath + filename)
 
     
-def make_plot_galstars(disk, stars, script_path, filename):
+def make_plot_galstars(disk, stars, title, script_path, filename):
     x_label = "X [kpc]"
     y_label = "Y [kpc]"
     
@@ -66,17 +69,18 @@ def make_plot_galstars(disk, stars, script_path, filename):
     ax = fig.add_subplot(111)
     ax.set_aspect('equal')
     
+    plt.title(title)
     plt.xlabel(x_label)
     plt.ylabel(y_label)
-    plt.xlim(-200, 200)
-    plt.ylim(-200, 200)
+    plt.xlim(-100, 100)
+    plt.ylim(-100, 100)
 
     ax.scatter(disk.x.value_in(units.kpc), disk.y.value_in(units.kpc),
                    c='tab:blue', alpha=1, s=1, lw=0)
     ax.scatter(stars.x.value_in(units.kpc), stars.y.value_in(units.kpc),
                    c='tab:orange', alpha=1, marker='.', lw=2)
     
-    savepath = script_path + '/plots/'
+    savepath = script_path + '/plots/solar_system_plots/'
     
     plt.savefig(savepath + filename)
 
@@ -138,9 +142,11 @@ def make_galaxies(M_galaxy, R_galaxy, n_halo, n_bulge, n_disk, script_path,
                              0] | (units.km/units.s)
         
         #galaxy2.rotate(np.pi/4, np.pi/4, 0.0)
+        #galaxy2.velocity -= [0.0, 0.0, 0] | units.km/units.s
+        
+        #move the galaxies to make them fit into the plot
         galaxy1.position -= [100., 100., 0] | units.kpc
         galaxy2.position -= [100., 100., 0] | units.kpc
-        #galaxy2.velocity -= [0.0, 0.0, 0] | units.km/units.s
     
     if not test:
         galaxy1_name = script_path + '/galaxies/data/M31_full'
@@ -183,7 +189,8 @@ def simulate_merger(galaxy1, galaxy2, converter, n_halo, t_end, script_path, plo
     disk2 = set2[:n_halo]
     
     if plot == True:
-        make_plot(disk1, disk2, script_path, "Galaxy_merger_t0")
+        plot_number = 0
+        make_plot(disk1, disk2, "MW M31 merger\nt = 0 Myr", script_path, 'MW_M31_merger_' + str(plot_number).zfill(4))
     
     current_iter = 0
     interval = 0.5 | units.Myr
@@ -201,54 +208,23 @@ def simulate_merger(galaxy1, galaxy2, converter, n_halo, t_end, script_path, plo
         
         dynamics_code.evolve_model(dynamics_code.model_time + interval)
         
-        if dynamics_code.model_time.value_in(units.Myr) == 100:
-                if plot == True:
-                    make_plot(disk1, disk2, script_path,
-                              "MW_M31_merger_t" + str(dynamics_code.model_time.value_in(units.Myr))+"Myr")
-        if dynamics_code.model_time.value_in(units.Myr) == 200:
-                if plot == True:
-                    make_plot(disk1, disk2, script_path,
-                              "MW_M31_merger_t" + str(dynamics_code.model_time.value_in(units.Myr))+"Myr")
-        if dynamics_code.model_time.value_in(units.Myr) == 300:
-                if plot == True:
-                    make_plot(disk1, disk2, script_path,
-                              "MW_M31_merger_t" + str(dynamics_code.model_time.value_in(units.Myr))+"Myr")
-        if dynamics_code.model_time.value_in(units.Myr) == 400:
-                if plot == True:
-                    make_plot(disk1, disk2, script_path,
-                              "MW_M31_merger_t" + str(dynamics_code.model_time.value_in(units.Myr))+"Myr")
-        if dynamics_code.model_time.value_in(units.Myr) == 500:
-                if plot == True:
-                    make_plot(disk1, disk2, script_path,
-                              "MW_M31_merger_t" + str(dynamics_code.model_time.value_in(units.Myr))+"Myr")
-        if dynamics_code.model_time.value_in(units.Myr) == 600:
-                if plot == True:
-                    make_plot(disk1, disk2, script_path,
-                              "MW_M31_merger_t" + str(dynamics_code.model_time.value_in(units.Myr))+"Myr")
-        if dynamics_code.model_time.value_in(units.Myr) == 700:
-                if plot == True:
-                    make_plot(disk1, disk2, script_path,
-                              "MW_M31_merger_t" + str(dynamics_code.model_time.value_in(units.Myr))+"Myr")
-        if dynamics_code.model_time.value_in(units.Myr) == 800:
-                if plot == True:
-                    make_plot(disk1, disk2, script_path,
-                              "MW_M31_merger_t" + str(dynamics_code.model_time.value_in(units.Myr))+"Myr")
-        if dynamics_code.model_time.value_in(units.Myr) == 900:
-                if plot == True:
-                    make_plot(disk1, disk2, script_path,
-                              "MW_M31_merger_t" + str(dynamics_code.model_time.value_in(units.Myr))+"Myr")
-        if dynamics_code.model_time.value_in(units.Myr) == 1000:
-                if plot == True:
-                    make_plot(disk1, disk2, script_path,
-                              "MW_M31_merger_t" + str(dynamics_code.model_time.value_in(units.Myr))+"Myr")
+        if plot == True:
+            if current_iter in [10*i for i in range(1, total_iter)]:
+                plot_number += 1
+                make_plot(disk1, disk2, 
+                          "MW M31 merger\nt = {} Myr".format(np.round(dynamics_code.model_time.value_in(units.Myr), 
+                                                                      decimals=0)),
+                          script_path, 'MW_M31_merger_' + str(plot_number).zfill(4))
         
         progress.update(current_iter)
         
     progress.finish()
     
     if plot == True:
-        make_plot(disk1, disk2, script_path,
-                  "MW_M31_merger_t" + str(t_end.value_in(units.Myr))+"Myr")
+        plot_number += 1
+        make_plot(disk1, disk2, 
+                  "MW M31 merger\nt = {} Myr".format(t_end.value_in(units.Myr)),
+                  script_path, 'MW_M31_merger_' + str(plot_number).zfill(4))
         
     dynamics_code.stop()
     
@@ -323,6 +299,7 @@ def mw_and_stars(galaxy1, stars, galaxy_converter, star_solver, n_halo, t_end, s
     
     if leapfrog:
         galaxy_dynamics_code.parameters.timestep = 0.5 | units.Myr
+        solver = galaxy_dynamics_code
     else:
         star_converter=nbody_system.nbody_to_si(stars.mass.sum(), 
                                                 stars.position.length())
@@ -333,9 +310,13 @@ def mw_and_stars(galaxy1, stars, galaxy_converter, star_solver, n_halo, t_end, s
         gravity = bridge.Bridge(use_threading=False)
         gravity.add_system(star_dynamics_code, (galaxy_dynamics_code,) )
         gravity.timestep = 0.5 | units.Myr
+        solver = gravity
     
     if plot == True:
-        make_plot_galstars(disk1, stars, script_path, "galstars_t0")
+        plot_number = 0
+        make_plot_galstars(disk1, stars, 
+                           "MW and Solar System\nt = 0 Myr", 
+                           script_path, 'galstars_' + str(plot_number).zfill(4))
         
     x = [] | units.kpc
     y = [] | units.kpc
@@ -355,25 +336,35 @@ def mw_and_stars(galaxy1, stars, galaxy_converter, star_solver, n_halo, t_end, s
     
     for time in times:
         
+        solver.evolve_model(time)
+        
         if leapfrog:
-            galaxy_dynamics_code.evolve_model(time)
             star_solver(current_iter, stars, galaxy_dynamics_code)
         else:
-            gravity.evolve_model(time)
             ch_g2l.copy()
-            
-        current_iter +=1
         
         x.append(stars.x)
         y.append(stars.y)
-                
+        
+        if plot == True:
+            if current_iter in [10*i for i in range(1, total_iter)]:
+                plot_number += 1
+                make_plot_galstars(disk1, stars, 
+                                   "MW and Solar System\nt = {} Myr".format(np.round(solver.model_time.value_in(units.Myr),
+                                                                                     decimals=0)), 
+                                   script_path, 'galstars_' + str(plot_number).zfill(4))
+        
+        current_iter +=1
+        
         progress.update(current_iter)
         
     progress.finish()
     
     if plot == True:
-        make_plot_galstars(disk1, stars, script_path,
-                  "galstars_t" + str(t_end.value_in(units.Myr))+"Myr")
+        plot_number += 1
+        make_plot_galstars(disk1, stars, 
+                           "MW and Solar System\nt = {} Myr".format(t_end.value_in(units.Myr)), 
+                           script_path, 'galstars_' + str(plot_number).zfill(4))
     
     galaxy_dynamics_code.stop()
     if not leapfrog:

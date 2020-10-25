@@ -78,7 +78,7 @@ def make_plot_galstars(disk, stars, title, script_path, filename):
     ax.scatter(disk.x.value_in(units.kpc), disk.y.value_in(units.kpc),
                    c='tab:blue', alpha=1, s=1, lw=0)
     ax.scatter(stars.x.value_in(units.kpc), stars.y.value_in(units.kpc),
-                   c='tab:orange', alpha=1, marker='.', lw=2)
+                   c='tab:orange', alpha=1, marker='.', lw=1)
     
     savepath = script_path + '/plots/solar_system_plots/'
     

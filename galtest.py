@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random
 import math
+from scipy.stats import kde
 
 import inspect
 import sys
@@ -18,6 +19,7 @@ filename = inspect.getframeinfo(inspect.currentframe()).filename
 SCRIPT_PATH = os.path.dirname(os.path.abspath(filename))
 #add progressbar path to possible paths to import modules
 sys.path.insert(1, SCRIPT_PATH + '/python-progressbar/')
+sys.path.insert(1, SCRIPT_PATH + '/galaxies/')
 
 from amuse.lab import *
 from amuse.ext.galactics_model import new_galactics_model
@@ -26,7 +28,7 @@ from amuse.ext.galactics_model import new_galactics_model
 import progressbar as pbar
 import progressbar.widgets as pbwg
 
-def make_plot_mw(galaxy, disk, title, filename):
+def plot_single_galaxy(halo, disk, title, filename):
     x_label = "X [kpc]"
     y_label = "Y [kpc]"
     
@@ -40,49 +42,83 @@ def make_plot_mw(galaxy, disk, title, filename):
     plt.xlim(-300, 300)
     plt.ylim(-300, 300)
 
-    ax.scatter(galaxy.x.value_in(units.kpc), galaxy.y.value_in(units.kpc),
+    ax.scatter(halo.x.value_in(units.kpc), halo.y.value_in(units.kpc),
                    c='tab:blue', alpha=1, s=1, lw=0)
     ax.scatter(disk.x.value_in(units.kpc), disk.y.value_in(units.kpc),
                    c='tab:orange', alpha=1, s=1, lw=0)
     
-    savepath = SCRIPT_PATH + '/plots/mw_new_model/'
+    savepath = SCRIPT_PATH + '/plots/single_galaxy_test/'
+    
+    plt.savefig(savepath + filename)
+    
+
+def density_histogram(galaxy, title, filename):
+    x = galaxy.x.value_in(units.kpc)
+    y = galaxy.y.value_in(units.kpc)
+    nbins = 5000
+    k = kde.gaussian_kde([x, y])
+    xi, yi = np.mgrid[x.min():x.max():nbins*1j, y.min():y.max():nbins*1j]
+    zi = k(np.vstack([xi.flatten(), yi.flatten()]))
+    
+    x_label = "X [kpc]"
+    y_label = "Y [kpc]"
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.set_aspect('equal')
+    
+    plt.title(title)
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.xlim(-300, 300)
+    plt.ylim(-300, 300)
+   
+    ax.pcolormesh(xi, yi, zi.reshape(xi.shape), cmap=plt.cm.Greens_r)
+    #plt.colorbar()
+    #cbar.set_label('Density')
+    plt.tight_layout()
+    
+    savepath = SCRIPT_PATH + '/plots/single_galaxy_test/'
+    
+    plt.savefig(savepath + filename)
+    
+
+def density_histogram2(galaxy, title, filename):
+    x = galaxy.x.value_in(units.kpc)
+    y = galaxy.y.value_in(units.kpc)
+    x_label = "X [kpc]"
+    y_label = "Y [kpc]"
+    xy_range = [[-20, 20], [-20, 20]]
+    
+    counts,ybins,xbins,image = plt.hist2d(x, y, bins=200, range=xy_range,
+                                          #normed=True
+                                          )
+    plt.close()
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.set_aspect('equal')
+    
+    plt.title(title)
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    
+    cont = ax.contourf(counts, extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()], cmap='RdGy')
+    
+    cbar = plt.colorbar(cont)
+    cbar.set_label('Density')
+    plt.tight_layout()
+    
+    savepath = SCRIPT_PATH + '/plots/single_galaxy_test/'
     
     plt.savefig(savepath + filename)
 
-def make_mw_test(M_galaxy, R_galaxy, n_halo, n_bulge, n_disk):
-    converter = nbody_system.nbody_to_si(M_galaxy, R_galaxy)
-    
-    widgets = ['Building galaxy 1: ', pbwg.AnimatedMarker(), ' ',
-               pbwg.Timer(), pbwg.EndMsg()]
-    with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
-        galaxy1 = new_galactics_model(n_halo,
-                                      converter,
-                                      halo_outer_radius = 244.48999 | units.kpc,
-                                      disk_number_of_particles = n_disk,
-                                      disk_mass = 19.66 * 2.33 * 10e9 | units.MSun,
-                                      disk_scale_length = 2.806 | units.kpc,
-                                      disk_outer_radius = 30 | units.kpc, 
-                                      disk_scale_height_sech2 = 0.409 | units.kpc,
-                                      bulge_scale_radius = 0.788 | units.kpc,
-                                      bulge_number_of_particles = n_bulge)
-                                      #central_radial_vel_dispersion = 0.7 * 100 | units.kms,
-                                      #scale_length_of_sigR2 = 2.806 | units.kpc)
-    
-    
-    widgets = ['Saving galaxies data: ', 
-               pbwg.AnimatedMarker(), pbwg.EndMsg()]
-    with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
-        write_set_to_file(galaxy1, SCRIPT_PATH + '/galaxies/data/MW_new_model', 'hdf5')
-
-    return galaxy1, converter
-
-def simulate_mw(galaxy1, converter, n_halo, t_end, plot=False):
-    #converter = nbody_system.nbody_to_si(1.0e12|units.MSun, 100|units.kpc)
+def simulate_single_galaxy(galaxy1, converter, n_halo, t_end, plot=False):
     
     dynamics_code = Gadget2(converter, number_of_workers=4)
     dynamics_code.parameters.epsilon_squared = (100 | units.parsec)**2
     
     set1 = dynamics_code.dm_particles.add_particles(galaxy1)
+    halo1 = set1[n_halo:]
     disk1 = set1[:n_halo]
     
     dynamics_code.particles.move_to_center()
@@ -90,9 +126,12 @@ def simulate_mw(galaxy1, converter, n_halo, t_end, plot=False):
     
     if plot == True:
         plot_number = 0
-        make_plot_mw(set1, disk1,
-             "MW\nt = 0 Myr", 
-             'mw_' + str(plot_number).zfill(4))
+        density_histogram2(set1,
+             "M31\nt = 0 Myr", 
+             'm31_' + str(plot_number).zfill(4))
+        #plot_single_galaxy(halo1, disk1,
+        #     "M31\nt = 0 Myr", 
+        #     'm31_' + str(plot_number).zfill(4))
     
     current_iter = 0
     interval = 0.5 | units.Myr
@@ -113,10 +152,14 @@ def simulate_mw(galaxy1, converter, n_halo, t_end, plot=False):
         if plot == True:
             if current_iter in [10*i for i in range(1, total_iter)]:
                 plot_number += 1
-                make_plot_mw(set1, disk1, 
-                             "MW\nt = {} Myr".format(int(np.round(dynamics_code.model_time.value_in(units.Myr), 
+                density_histogram2(set1, 
+                             "M31\nt = {} Myr".format(int(np.round(dynamics_code.model_time.value_in(units.Myr), 
                                                                   decimals=0))),
-                             'mw_' + str(plot_number).zfill(4))
+                             'm31_' + str(plot_number).zfill(4))
+                #plot_single_galaxy(halo1, disk1, 
+                #             "M31\nt = {} Myr".format(int(np.round(dynamics_code.model_time.value_in(units.Myr), 
+                #                                                  decimals=0))),
+                #             'm31_' + str(plot_number).zfill(4))
         
         progress.update(current_iter)
         
@@ -124,33 +167,43 @@ def simulate_mw(galaxy1, converter, n_halo, t_end, plot=False):
     
     if plot == True:
         plot_number += 1
-        make_plot_mw(set1, disk1, 
-                     "MW\nt = {} Myr".format(int(np.round(t_end.value_in(units.Myr), decimals=0))),                              
-                     'mw_' + str(plot_number).zfill(4))
+        density_histogram2(set1,
+                     "M31\nt = {} Myr".format(int(np.round(t_end.value_in(units.Myr), decimals=0))),                              
+                     'm31_' + str(plot_number).zfill(4))
+        #make_plot_mw(halo1, disk1, 
+        #             "M31\nt = {} Myr".format(int(np.round(t_end.value_in(units.Myr), decimals=0))),                              
+        #             'm31_' + str(plot_number).zfill(4))
         
     dynamics_code.stop()
-
-M_galaxy = 1.0e12 | units.MSun
-R_galaxy = 10 | units.kpc
-n_bulge = 10000
-n_disk = 10000
-n_halo = 20000
-t_end = 1100 | units.Myr
-
-mw_folder = SCRIPT_PATH + '/plots/mw_new_model/'
-
+    
+#creates plots folder
+mw_folder = SCRIPT_PATH + '/plots/single_galaxy_test/'
 if not os.path.exists(mw_folder):
     os.makedirs(mw_folder)
 
-mw_data = SCRIPT_PATH + '/galaxies/data/MW_new_model' 
+#simulation parameters
+scale_mass_galaxy = 1.0e12 | units.MSun
+scale_radius_galaxy = 10 | units.kpc
+t_end = 400 | units.Myr
+n_halo = 20000
 
-if not os.path.exists(mw_data):
-    MW, converter = make_mw_test(M_galaxy, R_galaxy, n_halo, n_bulge, n_disk)
+#M31 displacement
+rotation = np.array([[0.7703,  0.3244,  0.5490],
+                     [-0.6321, 0.5017,  0.5905],
+                     [-0.0839, -0.8019, 0.5915]])
 
-if os.path.exists(mw_data):
-    widgets = ['Loading galaxies data: ', pbwg.AnimatedMarker(), pbwg.EndMsg()]
-    with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
-        converter = nbody_system.nbody_to_si(M_galaxy, R_galaxy)
-        MW = read_set_from_file(mw_data, "hdf5")
+traslation = [-379.2, 612.7, 283.1] | units.kpc
+radial_velocity = 117 * np.array([0.4898, -0.7914, 0.3657]) | units.kms
+transverse_velocity = 50 * np.array([0.5236, 0.6024, 0.6024]) | units.kms
 
-simulate_mw(MW, converter, n_halo, t_end, plot=True)
+#reads galaxy data
+galaxy_data = SCRIPT_PATH + '/galaxies/data/m31_not_displaced_full' 
+converter = nbody_system.nbody_to_si(scale_mass_galaxy, scale_radius_galaxy)
+m31_not_displaced = read_set_from_file(galaxy_data, "hdf5")
+
+from galaxies import galaxies as gal
+
+m31 = gal.displace_galaxy(m31_not_displaced, rotation, traslation, radial_velocity, transverse_velocity)
+
+print('Simulating m31 ...', flush=True)
+simulate_single_galaxy(m31, converter, n_halo, t_end, plot=True)

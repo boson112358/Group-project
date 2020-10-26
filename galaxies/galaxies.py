@@ -13,7 +13,7 @@ import progressbar as pbar
 import progressbar.widgets as pbwg
 
 
-def make_plot(disk1, disk2, title, script_path, filename):
+def plot_merger(mw_halo, mw_disk, m31_halo, m31_disk, title, script_path, filename):
     x_label = "X [kpc]"
     y_label = "Y [kpc]"
     
@@ -27,12 +27,85 @@ def make_plot(disk1, disk2, title, script_path, filename):
     plt.xlim(-760, 760)
     plt.ylim(-760, 760)
 
-    ax.scatter(disk1.x.value_in(units.kpc), disk1.y.value_in(units.kpc),
-                   c='tab:blue', alpha=1, s=1, lw=0)
-    ax.scatter(disk2.x.value_in(units.kpc), disk2.y.value_in(units.kpc),
-                   c='tab:orange', alpha=1, s=1, lw=0)
+    #plotting mw_halo and mw_disk
+    #ax.scatter(mw_halo.x.value_in(units.kpc), mw_halo.y.value_in(units.kpc),
+               #c='tab:blue', alpha=0.6, s=1, lw=0)
+    ax.scatter(mw_disk.x.value_in(units.kpc), mw_disk.y.value_in(units.kpc),
+               c='tab:blue', alpha=1, s=1, lw=0, label='mw')
+    
+    #plotting m31_halo and m31_disk
+    #ax.scatter(m31_halo.x.value_in(units.kpc), m31_halo.y.value_in(units.kpc),
+               #c='tab:orange', alpha=0.6, s=1, lw=0)
+    ax.scatter(m31_disk.x.value_in(units.kpc), m31_disk.y.value_in(units.kpc),
+               c='tab:orange', alpha=1, s=1, lw=0, label='m31')
+    
+    plt.legend(loc='upper_right')
     
     savepath = script_path + '/plots/merger_plots/'
+    
+    plt.savefig(savepath + filename)
+    
+    
+def plot_zoomed_merger(mw_halo, mw_disk, m31_halo, m31_disk, title, script_path, filename):
+    x_label = "X [kpc]"
+    y_label = "Y [kpc]"
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.set_aspect('equal')
+    
+    plt.title(title)
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.xlim(-100, 100)
+    plt.ylim(-100, 100)
+
+    #plotting mw_halo and mw_disk
+    #ax.scatter(mw_halo.x.value_in(units.kpc), mw_halo.y.value_in(units.kpc),
+               #c='tab:blue', alpha=0.6, s=1, lw=0)
+    ax.scatter(mw_disk.x.value_in(units.kpc), mw_disk.y.value_in(units.kpc),
+               c='tab:blue', alpha=1, s=1, lw=0, label='mw')
+    
+    #plotting m31_halo and m31_disk
+    #ax.scatter(m31_halo.x.value_in(units.kpc), m31_halo.y.value_in(units.kpc),
+               #c='tab:orange', alpha=0.6, s=1, lw=0)
+    ax.scatter(m31_disk.x.value_in(units.kpc), m31_disk.y.value_in(units.kpc),
+               c='tab:orange', alpha=1, s=1, lw=0, label='m31')
+    
+    plt.legend(loc='upper_right')
+    
+    savepath = script_path + '/plots/zoomed_merger_plots/'
+    
+    plt.savefig(savepath + filename)
+    
+    
+def contour_merger(galaxy1, galaxy2, title, script_path, filename):
+    _x1, _x2 = np.array(galaxy1.x.value_in(units.kpc)), np.array(galaxy2.x.value_in(units.kpc))
+    x = np.concatenate((_x1, _x2))
+    y = np.concatenate((galaxy1.y.value_in(units.kpc), galaxy2.y.value_in(units.kpc)))
+    x_label = "X [kpc]"
+    y_label = "Y [kpc]"
+    xy_range = [[-760, 760], [-760, 760]]
+    
+    counts,ybins,xbins,image = plt.hist2d(x, y, bins=400, range=xy_range,
+                                          #normed=True
+                                          )
+    plt.close()
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.set_aspect('equal')
+    
+    plt.title(title)
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    
+    cont = ax.contourf(counts, extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()], cmap='RdGy')
+    
+    cbar = plt.colorbar(cont)
+    cbar.set_label('Density')
+    plt.tight_layout()
+    
+    savepath = script_path + '/plots/merger_contour/'
     
     plt.savefig(savepath + filename)
     
@@ -85,28 +158,6 @@ def make_plot_galstars(disk, stars, title, script_path, filename):
     plt.savefig(savepath + filename)
 
 
-def nstars(numparticles, radius, radius_var, vel):  #I kinda messed up, I shouldn't include Sag so we can remove that part and rename
-    particles = Particles(numparticles)
-    i=0
-    while i < numparticles:
-        #here we generate our N bodies, we can change code in here to reflect different things
-        #We can distribut them randomly, have them near eachother, all at the same radius etc.
-        #All particles in x-y plane, this should still be adjusted accordingly
-        
-        #For now I will keep the mass and radius the same and simulate stars at our radius +- a bit
-        angle = random.random()*2*math.pi
-        particles[i].mass = 5 | units.MSun 
-        particles[i].radius = 1.5 | units.RSun
-        #this gives a random radius between 1-radius_var and 1+radius_var times the radius
-        adjusted_rad = radius*(1 + radius_var*(2*(random.random()-0.5)))  
-        particles[i].position = (adjusted_rad*math.cos(angle),adjusted_rad*math.sin(angle) , 0 ) | units.kpc
-        particles[i].velocity = [math.sin(angle)*vel,-math.cos(angle)*vel,0] | (units.m/units.s)
-        
-        i += 1
-    
-    return particles
-
-
 def make_galaxies(M_galaxy, R_galaxy, n_halo, n_bulge, n_disk, script_path, 
                   separation=780, 
                   M31_velocity=50, 
@@ -146,12 +197,50 @@ def make_galaxies(M_galaxy, R_galaxy, n_halo, n_bulge, n_disk, script_path,
     return galaxy1, galaxy2, converter
 
 
+def make_galaxy(converter, galaxy_dict, script_path, test=False):
+    
+    n_halo = galaxy_dict['n_halo']
+    
+    widgets = ['Building {} galaxy: '.format(galaxy_dict['name']), pbwg.AnimatedMarker(), ' ',
+               pbwg.Timer(), pbwg.EndMsg()]
+    with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
+        galaxy = new_galactics_model(n_halo,
+                                     converter,
+                                     halo_outer_radius = galaxy_dict['halo_outer_radius'],
+                                     disk_number_of_particles = galaxy_dict['disk_number_of_particles'],
+                                     disk_mass = galaxy_dict['disk_mass'],
+                                     disk_scale_length = galaxy_dict['disk_scale_length'],
+                                     disk_outer_radius = galaxy_dict['disk_outer_radius'],
+                                     disk_scale_height_sech2 = galaxy_dict['disk_scale_height_sech2'],
+                                     bulge_scale_radius = galaxy_dict['bulge_scale_radius'],
+                                     bulge_number_of_particles = galaxy_dict['bulge_number_of_particles'])
+                                     #central_radial_vel_dispersion = 0.7 * 100 | units.kms,
+                                     #scale_length_of_sigR2 = 2.806 | units.kpc)
+    
+    if not test:
+        galaxy_data_path = script_path + '/galaxies/data/{}_full'.format(galaxy_dict['name'])
+    if test:
+        galaxy_data_path = script_path + '/galaxies/data/{}_test'.format(galaxy_dict['name'])
+    
+    widgets = ['Saving {} galaxy data: '.format(galaxy_dict['name']), 
+               pbwg.AnimatedMarker(), pbwg.EndMsg()]
+    with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
+        write_set_to_file(galaxy, galaxy_data_path, 'hdf5')
+
+    return galaxy
+
+
 def displace_galaxy(galaxy, rotation_mat, translation_vector, radial_velocity, transverse_velocity):
     widgets = ['Adjusting relative velocities and orientations: ', 
                pbwg.AnimatedMarker(), pbwg.EndMsg()]
+    
     with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
+        displaced_galaxy = Particles(len(galaxy))
+        displaced_galaxy.mass = galaxy.mass
+        displaced_galaxy.position = galaxy.position
+        displaced_galaxy.velocity = galaxy.velocity
         
-        for body in galaxy:
+        for body in displaced_galaxy:
             body.position = ([body.x.value_in(units.kpc), 
                               body.y.value_in(units.kpc), 
                               body.z.value_in(units.kpc)] @ rotation_mat) | units.kpc
@@ -159,12 +248,12 @@ def displace_galaxy(galaxy, rotation_mat, translation_vector, radial_velocity, t
                               body.vy.value_in(units.kms), 
                               body.vz.value_in(units.kms)] @ rotation_mat) | units.kms
         
-        galaxy.position += translation_vector
+        displaced_galaxy.position += translation_vector
         
-        galaxy.velocity += radial_velocity
-        galaxy.velocity += transverse_velocity
+        displaced_galaxy.velocity += radial_velocity
+        displaced_galaxy.velocity += transverse_velocity
     
-    return galaxy
+    return displaced_galaxy
 
 
 def test_particles(galaxy, n_halo, n_bulge, n_disk):
@@ -176,7 +265,7 @@ def test_particles(galaxy, n_halo, n_bulge, n_disk):
     return disk
 
 
-def simulate_merger(galaxy1, galaxy2, converter, n_halo, t_end, script_path, plot=False):
+def simulate_merger(galaxy1, galaxy2, n_halo, t_end, script_path, plot=False):
     converter = nbody_system.nbody_to_si(1.0e12|units.MSun, 100|units.kpc)
     
     dynamics_code = Gadget2(converter, number_of_workers=4)
@@ -188,12 +277,20 @@ def simulate_merger(galaxy1, galaxy2, converter, n_halo, t_end, script_path, plo
     dynamics_code.particles.move_to_center()
     #dynamics_code.parameters.timestep = 0.5 | units.Myr
     
+    halo1 = set1[n_halo:]
     disk1 = set1[:n_halo]
+    
+    halo2 = set2[n_halo:]
     disk2 = set2[:n_halo]
     
     if plot == True:
         plot_number = 0
-        make_plot(disk1, disk2, "MW M31 merger\nt = 0 Myr", script_path, 'MW_M31_merger_' + str(plot_number).zfill(4))
+        contour_merger(set1, set2, 
+                "MW M31 merger\nt = 0 Myr", script_path, 'mw_m31_cmerger_' + str(plot_number).zfill(4))
+        plot_merger(halo1, disk1, halo2, disk2, 
+                    "MW M31 merger\nt = 0 Myr", script_path, 'mw_m31_merger_' + str(plot_number).zfill(4))
+        plot_zoomed_merger(halo1, disk1, halo2, disk2, 
+                           "MW M31 merger\nt = 0 Myr", script_path, 'mw_m31_merger_' + str(plot_number).zfill(4))
     
     current_iter = 0
     interval = 0.5 | units.Myr
@@ -214,10 +311,18 @@ def simulate_merger(galaxy1, galaxy2, converter, n_halo, t_end, script_path, plo
         if plot == True:
             if current_iter in [10*i for i in range(1, total_iter)]:
                 plot_number += 1
-                make_plot(disk1, disk2, 
-                          "MW M31 merger\nt = {} Myr".format(np.round(dynamics_code.model_time.value_in(units.Myr), 
-                                                                      decimals=0)),
-                          script_path, 'MW_M31_merger_' + str(plot_number).zfill(4))
+                contour_merger(set1, set2, 
+                               "MW M31 merger\nt = {} Myr".format(int(np.round(dynamics_code.model_time.value_in(units.Myr), 
+                                                                               decimals=0))),
+                               script_path, 'mw_m31_cmerger_' + str(plot_number).zfill(4))
+                plot_merger(halo1, disk1, halo2, disk2, 
+                            "MW M31 merger\nt = {} Myr".format(int(np.round(dynamics_code.model_time.value_in(units.Myr), 
+                                                                            decimals=0))),
+                            script_path, 'mw_m31_merger_' + str(plot_number).zfill(4))
+                plot_zoomed_merger(halo1, disk1, halo2, disk2, 
+                                   "MW M31 merger\nt = {} Myr".format(int(np.round(dynamics_code.model_time.value_in(units.Myr), 
+                                                                                   decimals=0))),
+                                   script_path, 'mw_m31_merger_' + str(plot_number).zfill(4))
         
         progress.update(current_iter)
         
@@ -225,9 +330,15 @@ def simulate_merger(galaxy1, galaxy2, converter, n_halo, t_end, script_path, plo
     
     if plot == True:
         plot_number += 1
-        make_plot(disk1, disk2, 
-                  "MW M31 merger\nt = {} Myr".format(t_end.value_in(units.Myr)),
-                  script_path, 'MW_M31_merger_' + str(plot_number).zfill(4))
+        contour_merger(set1, set2,
+                       "MW M31 merger\nt = {} Myr".format(int(np.round(t_end.value_in(units.Myr), decimals=0))),
+                       script_path, 'mw_m31_cmerger_' + str(plot_number).zfill(4))
+        plot_merger(halo1, disk1, halo2, disk2,
+                    "MW M31 merger\nt = {} Myr".format(int(np.round(t_end.value_in(units.Myr), decimals=0))),
+                    script_path, 'mw_m31_merger_' + str(plot_number).zfill(4))
+        plot_zoomed_merger(halo1, disk1, halo2, disk2,
+                           "MW M31 merger\nt = {} Myr".format(int(np.round(t_end.value_in(units.Myr), decimals=0))),
+                           script_path, 'mw_m31_merger_' + str(plot_number).zfill(4))
         
     dynamics_code.stop()
     

@@ -1,0 +1,119 @@
+
+\documentclass[a4paper,12pt]{article} 
+
+% Packages:
+\usepackage{geometry}
+\usepackage{graphicx,xcolor} 
+\usepackage{subfigure} 
+\usepackage{float}
+\usepackage{amsmath, amssymb} 
+\usepackage[exponent-product=\cdot, per-mode=symbol]{siunitx} 
+\usepackage[notrig]{physics} 
+\usepackage{enumitem,fancyhdr,lastpage,parskip} 
+\usepackage[numbers,square,super,sort&compress]{natbib} 
+\usepackage[hidelinks]{hyperref}
+\usepackage{listings} 
+\usepackage{cprotect} 
+\allowdisplaybreaks
+
+% CODE ENVIRONMENT
+\definecolor{mygreen}{rgb}{0,0.6,0} \definecolor{mygray}{rgb}{0.5,0.5,0.5} \definecolor{mymauve}{rgb}{0.58,0,0.82}
+\lstset{basicstyle=\footnotesize, breakatwhitespace=false, breaklines=true, commentstyle=\color{mygreen}, extendedchars=true, frame=single, keepspaces=true, keywordstyle=\color{blue}, language=Python, numbers=left,                    numbersep=5pt, numberstyle=\tiny\color{mygray},  rulecolor=\color{black}, showspaces=false, showstringspaces=false, showtabs=false, stringstyle=\color{mymauve}, tabsize=3, title=\lstname, captionpos=b}
+
+
+% SET HEADER/FOOTER
+\pagestyle{fancy}
+\fancyhf{}
+\chead{GROUP-E}
+%\lhead{TITLE}
+\cfoot{\thepage\ of \pageref*{LastPage}}
+
+\begin{document}
+
+%titlepage
+\begin{titlepage}
+
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}} 
+
+\center 
+\begin{figure}[H] \center{\includegraphics[width=0.2\linewidth]{logo}} \end{figure}
+\textsc{\LARGE Universiteit Leiden}\\[1.5cm] 
+\textsc{\Large Simulation and Modeling in Astrophysics}\\[0.5cm]
+
+\HRule \\[0.4cm]
+{ \huge \bfseries The fate of the Solar System after Milky Way and Andromeda merger}\\[0.4cm] 
+\HRule \\[1.5cm]
+
+\begin{minipage}{0.45\textwidth}
+\begin{flushleft} \large
+\emph{Students:}\\
+\small{Alberto Brentegani} \small{(\texttt{s???????})}\\
+\small{Davey Plugers} \small{(\texttt{s???????})} \\
+\small{Zhen Xiang} \small{(\texttt{s2731126})}
+\end{flushleft}
+\end{minipage}
+~
+\begin{minipage}{0.4\textwidth}
+\begin{flushright} \large
+\emph{Lecturer:} \\
+\small{Prof.dr.S.F.(Simon)Portegies Zwart}\\
+\hspace{1cm} \\
+\end{flushright}
+\end{minipage}\\[4cm]
+
+{\large \today\\Leiden}\\[3cm] 
+
+\end{titlepage}
+
+
+\vfill 
+%abstract
+\begin{abstract}
+summarize the introduction,question,method and result
+\end{abstract}
+
+\newpage
+
+\vspace{2em}
+\setcounter{tocdepth}{2} 
+\tableofcontents 
+
+\newpage 
+
+
+
+%introduction
+\section{Introduction} 
+
+\section{Merger model}
+\subsection{Galaxies}
+\subsection{Solar System}
+
+\section{The simulation}
+\subsection{General Method}
+amuse
+\subsection{Initial conditions}
+
+\section{Results}
+\subsection{Features of merger}
+\subsection{Fate of the Solar System}
+
+\section{Conclusion}
+
+
+\newpage
+\addcontentsline{toc}{section}{References}
+\begin{thebibliography}{99} 
+
+\end{thebibliography}
+
+
+
+\newpage 
+\section*{Appendix: Major Code} \addcontentsline{toc}{section}{Appendix: Major Code}
+we can show the major code, like galaxy model, solor system in this section.
+
+%\cprotect{\subsection*}{galaxy code: \verb+galaxy.py+}
+%\small{\lstinputlisting{galaxy.py}}
+
+\end{document}

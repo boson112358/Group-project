@@ -111,6 +111,16 @@ rho = 1000 | units.MSun / (units.kpc)**3
 u = 1.6e+15 | (units.m)**2 / (units.s)**2
 
 
+#M31 displacement
+rotation = np.array([[0.7703,  0.3244,  0.5490],
+                     [-0.6321, 0.5017,  0.5905],
+                     [-0.0839, -0.8019, 0.5915]])
+
+traslation = [-379.2, 612.7, 283.1] | units.kpc
+radial_velocity = 117 * np.array([0.4898, -0.7914, 0.3657]) | units.kms
+transverse_velocity = 50 * np.array([0.5236, 0.6024, 0.6024]) | units.kms
+
+
 from galaxies import galaxies as gal
 from stars import solar_system as sol
 from intergal_medium import IGM_homogenous_Gadget2 as igm
@@ -123,17 +133,18 @@ if not TEST:
     n_halo = 20000
     
     mw_data = SCRIPT_PATH + '/galaxies/data/MW_full' 
-    m31_data = SCRIPT_PATH + '/galaxies/data/M31_full'
+    M31_not_displaced_data = SCRIPT_PATH + '/galaxies/data/M31_not_displaced_full'
 
-    if not os.path.exists(mw_data) and not os.path.exists(m31_data):
-        M31, MW, converter = gal.make_galaxies(M_galaxy, R_galaxy, n_halo, n_bulge, n_disk, SCRIPT_PATH, test=TEST)
+    if not os.path.exists(mw_data) and not os.path.exists(M31_not_displaced_data):
+        M31_not_displaced, MW, converter = gal.make_galaxies(M_galaxy, R_galaxy, n_halo, n_bulge, n_disk, 
+                                                             SCRIPT_PATH, test=TEST)
         
-    if os.path.exists(mw_data) and os.path.exists(m31_data):
+    if os.path.exists(mw_data) and os.path.exists(M31_not_displaced_data):
         widgets = ['Loading galaxies data: ', pbwg.AnimatedMarker(), pbwg.EndMsg()]
         with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
             converter = nbody_system.nbody_to_si(M_galaxy, R_galaxy)
             MW = read_set_from_file(mw_data, "hdf5")
-            M31 = read_set_from_file(m31_data, 'hdf5')
+            M31_not_displaced = read_set_from_file(M31_not_displaced_data, 'hdf5')
         
 if TEST:
     print('Using test initial conditions', flush=True)
@@ -142,21 +153,23 @@ if TEST:
     n_halo = 1500
     
     mw_data = SCRIPT_PATH + '/galaxies/data/MW_test' 
-    m31_data = SCRIPT_PATH + '/galaxies/data/M31_test'
+    M31_not_displaced_data = SCRIPT_PATH + '/galaxies/data/M31_not_displaced_test'
 
-    if not os.path.exists(mw_data) and not os.path.exists(m31_data):
-        M31, MW, converter = gal.make_galaxies(M_galaxy, R_galaxy, n_halo, n_bulge, n_disk, SCRIPT_PATH, test=TEST)
+    if not os.path.exists(mw_data) and not os.path.exists(M31_not_displaced_data):
+        M31_not_displaced, MW, converter = gal.make_galaxies(M_galaxy, R_galaxy, n_halo, n_bulge, n_disk, 
+                                                             SCRIPT_PATH, test=TEST)
         
-    if os.path.exists(mw_data) and os.path.exists(m31_data):
+    if os.path.exists(mw_data) and os.path.exists(M31_not_displaced_data):
         widgets = ['Loading galaxies data: ', pbwg.AnimatedMarker(), pbwg.EndMsg()]
         with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
             converter = nbody_system.nbody_to_si(M_galaxy, R_galaxy)
             MW = read_set_from_file(mw_data, "hdf5")
-            M31 = read_set_from_file(m31_data, 'hdf5')
+            M31_not_displaced = read_set_from_file(M31_not_displaced_data, 'hdf5')
 
 
 if all(value == False for value in [SOLAR, DISK, IGM]):
     print('Simulating merger with no additional components ...', flush=True)
+    M31 = gal.displace_galaxy(M31_not_displaced, rotation, traslation, radial_velocity, transverse_velocity)
     gal.simulate_merger(M31, MW, converter, n_halo, t_end, SCRIPT_PATH, plot=PLOT)
     
 if DISK:

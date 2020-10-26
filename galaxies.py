@@ -151,17 +151,12 @@ def displace_galaxy(galaxy, rotation_mat, translation_vector, radial_velocity, t
                pbwg.AnimatedMarker(), pbwg.EndMsg()]
     with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
         
-        for body in galaxy:
-            body.position = ([body.x.value_in(units.kpc), 
-                              body.y.value_in(units.kpc), 
-                              body.z.value_in(units.kpc)] @ rotation_mat) | units.kpc
-            body.velocity = ([body.vx.value_in(units.kms), 
-                              body.vy.value_in(units.kms), 
-                              body.vz.value_in(units.kms)] @ rotation_mat) | units.kms
+        galaxy.position = np.matmul(galaxy.position, rotation_mat)
+        galaxy.velocity = np.matmul(galaxy.velocity, rotation_mat)
         
         galaxy.position += translation_vector
         
-        galaxy.velocity += radial_velocity
+        galaxy.velocity += radial_valocity
         galaxy.velocity += transverse_velocity
     
     return galaxy

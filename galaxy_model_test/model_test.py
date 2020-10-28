@@ -28,6 +28,7 @@ import progressbar as pbar
 import progressbar.widgets as pbwg
 
 from amuse.lab import units, nbody_system
+from amuse.ext.galactics_model import new_galactics_model
 
 ###### plot function ######
 

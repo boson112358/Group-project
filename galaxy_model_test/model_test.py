@@ -58,12 +58,46 @@ def plot_single_galaxy(halo, disk, bulge, title, filename):
     
     plt.savefig(savepath + filename)
     
+    
+###### galaxy model ######
+def make_galaxy(converter, galaxy_dict, script_path):
+    
+    n_halo = galaxy_dict['n_halo']
+    
+    widgets = ['Building {} galaxy: '.format(galaxy_dict['name']), pbwg.AnimatedMarker(), ' ',
+               pbwg.Timer(), pbwg.EndMsg()]
+    with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
+        galaxy = new_galactics_model(n_halo,
+                                     converter,
+                                     disk_number_of_particles = galaxy_dict['disk_number_of_particles'],
+                                     disk_mass = galaxy_dict['disk_mass'],
+                                     disk_scale_length = galaxy_dict['disk_scale_length'],
+                                     disk_outer_radius = galaxy_dict['disk_outer_radius'],
+                                     #disk_truncation_width = galaxy_dict['disk_truncation_width'],
+                                     disk_scale_height_sech2 = galaxy_dict['disk_scale_height_sech2'],
+                                     disk_central_radial_velocity_dispersion = galaxy_dict['disk_central_radial_velocity_dispersion'],
+                                     disk_scale_length_of_sigR2 = galaxy_dict['disk_scale_length_of_sigR2'],
+                                     bulge_number_of_particles = galaxy_dict['bulge_number_of_particles'],
+                                     bulge_scale_radius = galaxy_dict['bulge_scale_radius'],
+                                    )
+    
+    galaxy_data_path = script_path + '/galaxies/data/testrun/{}_testrun'.format(galaxy_dict['name'])
+    
+    widgets = ['Saving {} galaxy data: '.format(galaxy_dict['name']), 
+               pbwg.AnimatedMarker(), pbwg.EndMsg()]
+    with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
+        write_set_to_file(galaxy, galaxy_data_path, 'hdf5')
+
+    return galaxy
+    
+    
 ###### initial conditions ######
 
 #simulation parameters
 scale_mass_galaxy = 1.0e12 | units.MSun
 scale_radius_galaxy = 100 | units.kpc
 t_end = 1000 | units.Myr
+t_step = 0.5 | units.Myr
 n_bulge = 10000
 n_disk = 20000
 n_halo = 40000
@@ -77,6 +111,7 @@ traslation = [-379.2, 612.7, 283.1] | units.kpc
 radial_velocity = 117 * np.array([0.4898, -0.7914, 0.3657]) | units.kms
 transverse_velocity = 50 * np.array([0.5236, 0.6024, 0.6024]) | units.kms
 
+#mw parameters
 mw_parameters = {'name': 'mw',
                  'n_halo': n_halo,
                  #'halo_outer_radius' : 244.48999 | units.kpc,
@@ -92,29 +127,9 @@ mw_parameters = {'name': 'mw',
                  'bulge_number_of_particles' : n_bulge,
                  'bulge_scale_radius' : 0.788 | units.kpc}
 
-###### building galaxy ######
 
-from amuse.ext.galactics_model import new_galactics_model
+###### building galaxy ######
 
 converter = nbody_system.nbody_to_si(scale_mass_galaxy, scale_radius_galaxy)
 
-galaxy_dict = mw_parameters
-
-#n_halo = galaxy_dict['n_halo']
-    
-widgets = ['Building {} galaxy: '.format(galaxy_dict['name']), pbwg.AnimatedMarker(), ' ',
-           pbwg.Timer(), pbwg.EndMsg()]
-with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
-    galaxy = new_galactics_model(n_halo,
-                                 converter,
-                                 disk_number_of_particles = galaxy_dict['disk_number_of_particles'],
-                                 disk_mass = galaxy_dict['disk_mass'],
-                                 disk_scale_length = galaxy_dict['disk_scale_length'],
-                                 disk_outer_radius = galaxy_dict['disk_outer_radius'],
-                                 #disk_truncation_width = galaxy_dict['disk_truncation_width'],
-                                 disk_scale_height_sech2 = galaxy_dict['disk_scale_height_sech2'],
-                                 disk_central_radial_velocity_dispersion = galaxy_dict['disk_central_radial_velocity_dispersion'],
-                                 disk_scale_length_of_sigR2 = galaxy_dict['disk_scale_length_of_sigR2'],
-                                 bulge_number_of_particles = galaxy_dict['bulge_number_of_particles'],
-                                 bulge_scale_radius = galaxy_dict['bulge_scale_radius'],
-                                )
+mw = make_galaxy(converter, mw_parameters, SCRIPT_PATH)

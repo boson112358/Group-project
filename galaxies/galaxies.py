@@ -215,7 +215,7 @@ def make_galaxy(converter, galaxy_dict, script_path, test=False):
         galaxy = new_galactics_model(n_halo,
                                      converter,
                                      #halo_outer_radius = galaxy_dict['halo_outer_radius'],
-                                     #halo_streaming_fraction = galaxy_dict["halo_streaming_fraction"],
+                                     halo_streaming_fraction = galaxy_dict["halo_streaming_fraction"],
                                      halo_scale_length = galaxy_dict['halo_scale_length'],
                                      disk_number_of_particles = galaxy_dict['disk_number_of_particles'],
                                      disk_mass = galaxy_dict['disk_mass'],
@@ -224,7 +224,7 @@ def make_galaxy(converter, galaxy_dict, script_path, test=False):
                                      disk_scale_height_sech2 = galaxy_dict['disk_scale_height_sech2'],
                                      bulge_scale_radius = galaxy_dict['bulge_scale_radius'],
                                      bulge_number_of_particles = galaxy_dict['bulge_number_of_particles'],
-                                     #bulge_streaming_fraction = galaxy_dict["bulge_streaming_fraction"],
+                                     bulge_streaming_fraction = galaxy_dict["bulge_streaming_fraction"],
                                      #disk_scale_length_of_sigR2 = galaxy_dict['disk_scale_length_of_sigR2'],
                                      disk_central_radial_velocity_dispersion = galaxy_dict['disk_central_radial_velocity_dispersion'],
                                      output_directory = '/data1/brentegani/')

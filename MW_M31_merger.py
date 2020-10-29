@@ -98,35 +98,48 @@ if not TEST:
 elif TEST:
     print('Using test initial conditions', flush=True)
     n_bulge = 10000
-    n_disk = 10000
-    n_halo = 20000
+    n_disk = 20000
+    n_halo = 40000
 
 mw_parameters = {'name': 'mw',
+                 #halo parameters
                  'n_halo': n_halo,
-                 'halo_outer_radius' : 244.48999 | units.kpc,
+                 "halo_streaming_fraction": 0.,
+                 'halo_scale_length': 12.96 | units.kpc,
+                 #disk parameters
                  'disk_number_of_particles' : n_disk,
                  'disk_mass' : 19.66 * 2.33 * 10e9 | units.MSun,
                  'disk_scale_length' : 2.806 | units.kpc,
                  'disk_outer_radius' : 30 | units.kpc, 
                  'disk_scale_height_sech2' : 0.409 | units.kpc,
+                 'disk_central_radial_velocity_dispersion': 0.7,
+                 #bulge parameters
                  'bulge_scale_radius' : 0.788 | units.kpc,
-                 'bulge_number_of_particles' : n_bulge}
+                 'bulge_number_of_particles' : n_bulge,
+                 "bulge_streaming_fraction": 0.,
+                 #unused parameters (they cause problems)
+                 'disk_scale_length_of_sigR2': 2.806 | units.kpc}
 
 m31_parameters = {'name': 'm31_not_displaced',
                   'n_halo': n_halo,
-                  'halo_outer_radius' : 201.619995 | units.kpc,
+                  #'halo_outer_radius' : 201.619995 | units.kpc,
+                  "halo_streaming_fraction": 0.,
+                  'halo_scale_length': 12.94 | units.kpc,
                   'disk_number_of_particles' : n_disk,
                   'disk_mass' : 33.40 * 2.33 * 10e9 | units.MSun,
                   'disk_scale_length' : 5.577 | units.kpc,
                   'disk_outer_radius' : 30 | units.kpc, 
                   'disk_scale_height_sech2' : 0.3 | units.kpc,
                   'bulge_scale_radius' : 1.826 | units.kpc,
-                  'bulge_number_of_particles' : n_bulge}
+                  'bulge_number_of_particles' : n_bulge,
+                  "bulge_streaming_fraction": 0.,
+                  'disk_central_radial_velocity_dispersion': 0.7,
+                  'disk_scale_length_of_sigR2': 5.577 | units.kpc}
 
 #simulation parameters
 scale_mass_galaxy = 1.0e12 | units.MSun
 scale_radius_galaxy = 10 | units.kpc
-t_end = 8000 | units.Myr
+t_end = 400 | units.Myr
 
 #Solar system starting conditions
 n_stars = 10                                       #How many particles we will add
@@ -172,7 +185,7 @@ elif TEST:
     m31_not_displaced_data_path = SCRIPT_PATH + '/galaxies/data/{}_test'.format(m31_parameters['name']) 
 
 if os.path.exists(mw_data_path) and os.path.exists(m31_not_displaced_data_path):
-    widgets = ['Loading galaxies data: ', pbwg.AnimatedMarker(), pbwg.EndMsg()]
+    widgets = ['Found galaxies data, loading: ', pbwg.AnimatedMarker(), pbwg.EndMsg()]
     with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
         mw = read_set_from_file(mw_data_path, "hdf5")
         m31_not_displaced = read_set_from_file(m31_not_displaced_data_path, 'hdf5')
@@ -185,7 +198,7 @@ if all(value == False for value in [SOLAR, DISK, IGM]):
     m31 = gal.displace_galaxy(m31_not_displaced, rotation, traslation, radial_velocity, transverse_velocity)
     print('Simulating merger with no additional components (t = {} Myr) ...'.format(int(np.round(t_end.value_in(units.Myr), 
                                                                                                  decimals=0))), flush=True)
-    gal.simulate_merger(mw, m31, n_halo, t_end, SCRIPT_PATH, plot=PLOT)
+    gal.simulate_merger(mw, m31, n_halo, n_disk, n_bulge, t_end, SCRIPT_PATH, interval=1|units.Myr, plot=PLOT)
     
 if DISK:
     print('Simulating merger with disk test particles ...', flush=True)

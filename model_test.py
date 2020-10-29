@@ -19,7 +19,7 @@ SCRIPT_PATH = os.path.dirname(os.path.abspath(filename))
 sys.path.insert(1, SCRIPT_PATH + '/python-progressbar/')
 
 #creates plots folder
-mw_folder = SCRIPT_PATH + '/plots_test/'
+mw_folder = SCRIPT_PATH + '/plots/testrun/'
 if not os.path.exists(mw_folder):
     os.makedirs(mw_folder)
 
@@ -54,7 +54,7 @@ def plot_single_galaxy(halo, disk, bulge, title, filename):
     
     plt.legend(loc='upper right')
     
-    savepath = SCRIPT_PATH + '/plots_test/'
+    savepath = SCRIPT_PATH + '/plots/testrun/'
     
     plt.savefig(savepath + filename)
     
@@ -83,7 +83,7 @@ def make_galaxy(converter, galaxy_dict, script_path):
                                      output_directory = '/data1/brentegani/'
                                     )
 
-    galaxy_data_path = SCRIPT_PATH + '/galaxies/test_data/{}_testrun'.format(galaxy_dict['name'])
+    galaxy_data_path = SCRIPT_PATH + '/galaxies/data/testrun/{}_testrun'.format(galaxy_dict['name'])
 
     widgets = ['Saving {} galaxy data: '.format(galaxy_dict['name']), 
                pbwg.AnimatedMarker(), pbwg.EndMsg()]
@@ -117,7 +117,7 @@ def make_galaxy_test(converter, galaxy_dict, script_path):
                                      output_directory = '/data1/brentegani/'
                                     )
 
-    galaxy_data_path = SCRIPT_PATH + '/galaxies/test_data/{}_testrun'.format(galaxy_dict['name'])
+    galaxy_data_path = SCRIPT_PATH + '/galaxies/data/testrun/{}_sample_testrun'.format(galaxy_dict['name'])
 
     widgets = ['Saving {} galaxy data: '.format(galaxy_dict['name']), 
                pbwg.AnimatedMarker(), pbwg.EndMsg()]
@@ -244,7 +244,7 @@ print('Simuation test run', flush=True)
 
 converter = nbody_system.nbody_to_si(scale_mass_galaxy, scale_radius_galaxy)
 
-mw_data_path = SCRIPT_PATH + '/galaxies/test_data/{}_testrun'.format(mw_parameters['name'])
+mw_data_path = SCRIPT_PATH + '/galaxies/data/testrun/{}_sample_testrun'.format(mw_parameters['name'])
 
 if os.path.exists(mw_data_path):
     widgets = ['Found galaxy data, loading: ', pbwg.AnimatedMarker(), pbwg.EndMsg()]

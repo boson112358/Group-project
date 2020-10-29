@@ -50,7 +50,7 @@ def plot_merger(mw_halo, mw_disk, mw_bulge, m31_halo, m31_disk, m31_bulge, title
     
     plt.legend(loc='upper right')
     
-    savepath = script_path + '/plots/merger_plots/'
+    savepath = script_path + '/plots/merger-plots/'
     
     plt.savefig(savepath + filename)
     
@@ -83,7 +83,7 @@ def plot_zoomed_merger(mw_halo, mw_disk, m31_halo, m31_disk, title, script_path,
     
     plt.legend(loc='upper_right')
     
-    savepath = script_path + '/plots/zoomed_merger_plots/'
+    savepath = script_path + '/plots/zoomed-merger-plots/'
     
     plt.savefig(savepath + filename)
     
@@ -113,7 +113,7 @@ def contour_merger(galaxy1, galaxy2, title, script_path, filename):
     cbar.set_label('Density')
     plt.tight_layout()
     
-    savepath = script_path + '/plots/merger_contour/'
+    savepath = script_path + '/plots/merger-contour/'
     
     plt.savefig(savepath + filename)
     
@@ -161,7 +161,7 @@ def make_plot_galstars(disk, stars, title, script_path, filename):
     ax.scatter(stars.x.value_in(units.kpc), stars.y.value_in(units.kpc),
                    c='tab:orange', alpha=1, marker='.', lw=1)
     
-    savepath = script_path + '/plots/solar_system_plots/'
+    savepath = script_path + '/plots/solar-system-plots/'
     
     plt.savefig(savepath + filename)
     

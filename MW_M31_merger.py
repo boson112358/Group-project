@@ -24,10 +24,10 @@ sys.path.insert(1, SCRIPT_PATH + '/python-progressbar/')
 
 
 plot_folders = [SCRIPT_PATH + '/plots', 
-                SCRIPT_PATH + '/plots/merger_plots',
-                SCRIPT_PATH + '/plots/solar_system_plots',
-                SCRIPT_PATH + '/plots/merger_contour/',
-                SCRIPT_PATH + '/plots/zoomed_merger_plots/']
+                SCRIPT_PATH + '/plots/merger-plots',
+                SCRIPT_PATH + '/plots/solar-system_plots',
+                SCRIPT_PATH + '/plots/merger-contour/',
+                SCRIPT_PATH + '/plots/zoomed-merger-plots/']
 
 for folder in plot_folders:
     if not os.path.exists(folder):
@@ -170,7 +170,7 @@ transverse_velocity = 50 * np.array([0.5236, 0.6024, 0.6024]) | units.kms
 
 from galaxies import galaxies as gal
 from stars import solar_system as sol
-from intergal_medium import IGM_homogenous_Gadget2 as igm
+from igmedium import IGM_homogenous_Gadget2 as igm
 
 
 #Galaxy initialization

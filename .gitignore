@@ -1,0 +1,4 @@
+*.pyc
+plots/
+animations/
+_amuse_output_data/

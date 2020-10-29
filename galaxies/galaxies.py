@@ -1,5 +1,7 @@
 ###### importing modules ######
 
+from galaxies import __SCRIPT_PATH__
+
 import numpy as np
 import matplotlib.pyplot as plt
 import random
@@ -166,43 +168,75 @@ def make_plot_galstars(disk, stars, title, script_path, filename):
     plt.savefig(savepath + filename)
     
     
+def plot_single_galaxy(halo, disk, bulge, title, filename):
+    
+    global __SCRIPT_PATH__
+    
+    x_label = "X [kpc]"
+    y_label = "Y [kpc]"
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.set_aspect('equal')
+    
+    plt.title(title)
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.xlim(-100, 100)
+    plt.ylim(-100, 100)
+
+    ax.scatter(halo.x.value_in(units.kpc), halo.y.value_in(units.kpc),
+                   c='tab:blue', alpha=1, s=1, lw=0, label='halo')
+    ax.scatter(disk.x.value_in(units.kpc), disk.y.value_in(units.kpc),
+                   c='tab:orange', alpha=1, s=1, lw=0, label='disk')
+    ax.scatter(bulge.x.value_in(units.kpc), bulge.y.value_in(units.kpc),
+                   c='tab:green', alpha=1, s=1, lw=0, label='bulge')
+    
+    plt.legend(loc='upper right')
+    
+    savepath = __SCRIPT_PATH__ + '/plots/testrun/'
+    
+    plt.savefig(savepath + filename)
+    
+    
 ###### galaxy functions ######
 
-def make_galaxies_test(converter, galaxy_dict, script_path, test=False):
-    
+def make_galaxy_test(converter, galaxy_dict, script_path):
+
     n_halo = galaxy_dict['n_halo']
-    
-    widgets = ['Building galaxy 1: ', pbwg.AnimatedMarker(), ' ',
+
+    widgets = ['Building {} galaxy: '.format(galaxy_dict['name']), pbwg.AnimatedMarker(), ' ',
                pbwg.Timer(), pbwg.EndMsg()]
     with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
-        galaxy1 = new_galactics_model(n_halo,
-                                      converter,
-                                      disk_outer_radius = galaxy_dict['disk_outer_radius'],
-                                      bulge_number_of_particles=galaxy_dict['bulge_number_of_particles'],
-                                      disk_number_of_particles=galaxy_dict['disk_number_of_particles'],)
-    
-    widgets = ['Building galaxy 2: ', pbwg.AnimatedMarker(),
-               pbwg.EndMsg()]
-    with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
-        galaxy2 = Particles(len(galaxy1))
-        galaxy2.mass = galaxy1.mass
-        galaxy2.position = galaxy1.position
-        galaxy2.velocity = galaxy1.velocity
-    
-    if not test:
-        galaxy1_name = script_path + '/galaxies/data/M31_not_displaced_full'
-        galaxy2_name = script_path + '/galaxies/data/MW_full'
-    if test:
-        galaxy1_name = script_path + '/galaxies/data/M31_not_displaced_test'
-        galaxy2_name = script_path + '/galaxies/data/MW_test'
-    
-    widgets = ['Saving galaxies data: ', 
+        galaxy = new_galactics_model(n_halo,
+                                     converter,
+                                     #halo parameters
+                                     #halo_outer_radius = galaxy_dict['halo_outer_radius'],
+                                     #halo_scale_length = galaxy_dict['halo_scale_length'],
+                                     #disk parameters
+                                     disk_number_of_particles = galaxy_dict['disk_number_of_particles'],
+                                     disk_mass = galaxy_dict['disk_mass'],
+                                     #disk_scale_length = galaxy_dict['disk_scale_length'],
+                                     disk_outer_radius = galaxy_dict['disk_outer_radius'],
+                                     #disk_scale_height_sech2 = galaxy_dict['disk_scale_height_sech2'],
+                                     #disk_central_radial_velocity_dispersion= galaxy_dict['disk_central_radial_velocity_dispersion'],
+                                     #bulge paramaters
+                                     #bulge_scale_radius = galaxy_dict['bulge_scale_radius'],
+                                     bulge_number_of_particles = galaxy_dict['bulge_number_of_particles'],
+                                     #unused parameters
+                                     #disk_scale_length_of_sigR2 = galaxy_dict['disk_scale_length_of_sigR2'],
+                                     #halo_streaming_fraction = galaxy_dict["halo_streaming_fraction"],
+                                     #bulge_streaming_fraction = galaxy_dict["bulge_streaming_fraction"],
+                                     output_directory = '/data1/brentegani/')
+
+    galaxy_data_path = SCRIPT_PATH + '/galaxies/data/testrun/{}_sample_testrun'.format(galaxy_dict['name'])
+
+    widgets = ['Saving {} galaxy data: '.format(galaxy_dict['name']), 
                pbwg.AnimatedMarker(), pbwg.EndMsg()]
     with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
-        write_set_to_file(galaxy1, galaxy1_name, 'hdf5')
-        write_set_to_file(galaxy2, galaxy2_name, 'hdf5')
-
-    return galaxy1, galaxy2, converter
+        write_set_to_file(galaxy, galaxy_data_path, 'hdf5')
+    
+    return galaxy
 
 
 def make_galaxy(converter, galaxy_dict, script_path, test=False):
@@ -214,19 +248,23 @@ def make_galaxy(converter, galaxy_dict, script_path, test=False):
     with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
         galaxy = new_galactics_model(n_halo,
                                      converter,
+                                     #halo parameters
                                      #halo_outer_radius = galaxy_dict['halo_outer_radius'],
-                                     halo_streaming_fraction = galaxy_dict["halo_streaming_fraction"],
                                      halo_scale_length = galaxy_dict['halo_scale_length'],
+                                     #disk parameters
                                      disk_number_of_particles = galaxy_dict['disk_number_of_particles'],
                                      disk_mass = galaxy_dict['disk_mass'],
                                      disk_scale_length = galaxy_dict['disk_scale_length'],
                                      disk_outer_radius = galaxy_dict['disk_outer_radius'],
                                      disk_scale_height_sech2 = galaxy_dict['disk_scale_height_sech2'],
+                                     disk_central_radial_velocity_dispersion = galaxy_dict['disk_central_radial_velocity_dispersion'],
+                                     #bulge paramaters
                                      bulge_scale_radius = galaxy_dict['bulge_scale_radius'],
                                      bulge_number_of_particles = galaxy_dict['bulge_number_of_particles'],
-                                     bulge_streaming_fraction = galaxy_dict["bulge_streaming_fraction"],
+                                     #unused parameters
                                      #disk_scale_length_of_sigR2 = galaxy_dict['disk_scale_length_of_sigR2'],
-                                     disk_central_radial_velocity_dispersion = galaxy_dict['disk_central_radial_velocity_dispersion'],
+                                     #halo_streaming_fraction = galaxy_dict["halo_streaming_fraction"],
+                                     #bulge_streaming_fraction = galaxy_dict["bulge_streaming_fraction"],
                                      output_directory = '/data1/brentegani/')
     
     if not test:
@@ -242,7 +280,7 @@ def make_galaxy(converter, galaxy_dict, script_path, test=False):
     return galaxy
 
 
-######  galaxy rototranslation ######
+###### galaxy rototranslation ######
 
 def displace_galaxy(galaxy, rotation_mat, translation_vector, radial_velocity, transverse_velocity):
     widgets = ['Adjusting relative velocities and orientations: ', 
@@ -436,8 +474,116 @@ def simulate_merger_with_particles(galaxy1, galaxy2, converter, n_halo, n_bulge,
         
     gravity.stop()
     
+
+def merger_and_igm(galaxy1, galaxy2, converter, sph_code, n_halo, t_end, script_path, plot=False):
+    converter = nbody_system.nbody_to_si(1.0e12|units.MSun, 100|units.kpc)
+    
+    dynamics_code = Fi(converter, number_of_workers=4)
+    dynamics_code.parameters.epsilon_squared = (100 | units.parsec)**2
+    
+    set1 = dynamics_code.particles.add_particles(galaxy1)
+    set2 = dynamics_code.particles.add_particles(galaxy2)
+    
+    dynamics_code.particles.move_to_center()
+    
+    disk1 = set1[:n_halo]
+    disk2 = set2[:n_halo]
+    
+    if plot == True:
+        make_plot(disk1, disk2, script_path, "sph_merger_t0")
+    
+    current_iter = 0
+    interval = 0.5 | units.Myr
+    total_iter = int(t_end/interval) + 1
+    
+    gravity_sph = bridge.Bridge(use_threading=False)
+    gravity_sph.add_system(dynamics_code, (sph_code,) )
+    gravity_sph.add_system(sph_code, (dynamics_code,) )
+    gravity_sph.timestep = 0.5 | units.Myr
+    
+    widgets = ['Step ', pbwg.SimpleProgress(), ' ',
+               pbwg.Bar(marker='=', tip='>', left='[', right=']', fill=' '), 
+               pbwg.Percentage(), ' - ', pbwg.ETA('ETA'), pbwg.EndMsg()]
+    progress = pbar.ProgressBar(widgets=widgets, maxval=total_iter, fd=sys.stdout).start()
+    
+    while dynamics_code.model_time < t_end:
+        
+        current_iter +=1
+        
+        gravity_sph.evolve_model(gravity_sph.model_time + interval)
+                
+        progress.update(current_iter)
+        
+    progress.finish()
+    
+    if plot == True:
+        make_plot(disk1, disk2, script_path,
+                  "sph_merger_t" + str(t_end.value_in(units.Myr))+"Myr")
+        
+    gravity_sph.stop()
+    
     
 ###### single galaxy simulation ######
+
+def simulate_single_galaxy(galaxy1, converter, n_halo, n_bulge, n_disk, t_end, interval=0.5|units.Myr, plot=False):
+    
+    dynamics_code = Gadget2(converter, number_of_workers=4)
+    dynamics_code.parameters.epsilon_squared = (100 | units.parsec)**2
+    
+    set1 = dynamics_code.dm_particles.add_particles(galaxy1)
+    
+    halo1 = set1[n_disk+n_bulge:]
+    bulge1 = set1[n_disk:n_disk+n_bulge]
+    disk1 = set1[:n_disk]
+    
+    dynamics_code.particles.move_to_center()
+    dynamics_code.timestep = interval
+    
+    #when using Fi
+    #dynamics_code.parameters.timestep = interval
+    
+    if plot == True:
+        plot_number = 0
+        last_plot_time = 0 | units.Myr
+        plot_single_galaxy(halo1, disk1, bulge1,
+             "TEST\nt = 0 Myr", 
+             'mw_testrun_' + str(plot_number).zfill(4))
+    
+    current_iter = 0
+    t_end_in_Myr = t_end.as_quantity_in(units.Gyr)
+    total_iter = int(t_end_in_Myr/interval) + 10
+    
+    widgets = ['Step ', pbwg.SimpleProgress(), ' ',
+               pbwg.Bar(marker='=', tip='>', left='[', right=']', fill=' '), 
+               pbwg.Percentage(), ' - ', pbwg.ETA('ETA'), pbwg.EndMsg()]
+    progress = pbar.ProgressBar(widgets=widgets, maxval=total_iter, fd=sys.stdout).start()
+    
+    while dynamics_code.model_time < t_end:
+        
+        current_iter +=1
+        
+        dynamics_code.evolve_model(dynamics_code.model_time + interval)
+        
+        if plot == True:
+            if check_last_plot_time(dynamics_code.model_time, last_plot_time, t_end/100):
+                plot_number += 1
+                last_plot_time = dynamics_code.model_time
+                plot_single_galaxy(halo1, disk1, bulge1, 
+                             "TEST\nt = {} Myr".format(int(np.round(dynamics_code.model_time.value_in(units.Myr), 
+                                                                  decimals=0))),
+                             'mw_testrun_' + str(plot_number).zfill(4))
+        
+        progress.update(current_iter)
+        
+    progress.finish()
+    
+    if plot == True:
+        plot_number += 1
+        plot_single_galaxy(halo1, disk1, bulge1,
+                     "TEST\nt = {} Myr".format(int(np.round(t_end.value_in(units.Myr), decimals=0))),                              
+                     'mw_testrun_' + str(plot_number).zfill(4))
+        
+    dynamics_code.stop()
 
 def mw_and_stars(galaxy1, stars, galaxy_converter, star_solver, n_halo, t_end, script_path, plot=False):
     leapfrog = True
@@ -527,51 +673,3 @@ def mw_and_stars(galaxy1, stars, galaxy_converter, star_solver, n_halo, t_end, s
     galaxy_dynamics_code.stop()
     if not leapfrog:
         star_dynamics_code.stop()
-
-
-def merger_and_igm(galaxy1, galaxy2, converter, sph_code, n_halo, t_end, script_path, plot=False):
-    converter = nbody_system.nbody_to_si(1.0e12|units.MSun, 100|units.kpc)
-    
-    dynamics_code = Fi(converter, number_of_workers=4)
-    dynamics_code.parameters.epsilon_squared = (100 | units.parsec)**2
-    
-    set1 = dynamics_code.particles.add_particles(galaxy1)
-    set2 = dynamics_code.particles.add_particles(galaxy2)
-    
-    dynamics_code.particles.move_to_center()
-    
-    disk1 = set1[:n_halo]
-    disk2 = set2[:n_halo]
-    
-    if plot == True:
-        make_plot(disk1, disk2, script_path, "sph_merger_t0")
-    
-    current_iter = 0
-    interval = 0.5 | units.Myr
-    total_iter = int(t_end/interval) + 1
-    
-    gravity_sph = bridge.Bridge(use_threading=False)
-    gravity_sph.add_system(dynamics_code, (sph_code,) )
-    gravity_sph.add_system(sph_code, (dynamics_code,) )
-    gravity_sph.timestep = 0.5 | units.Myr
-    
-    widgets = ['Step ', pbwg.SimpleProgress(), ' ',
-               pbwg.Bar(marker='=', tip='>', left='[', right=']', fill=' '), 
-               pbwg.Percentage(), ' - ', pbwg.ETA('ETA'), pbwg.EndMsg()]
-    progress = pbar.ProgressBar(widgets=widgets, maxval=total_iter, fd=sys.stdout).start()
-    
-    while dynamics_code.model_time < t_end:
-        
-        current_iter +=1
-        
-        gravity_sph.evolve_model(gravity_sph.model_time + interval)
-                
-        progress.update(current_iter)
-        
-    progress.finish()
-    
-    if plot == True:
-        make_plot(disk1, disk2, script_path,
-                  "sph_merger_t" + str(t_end.value_in(units.Myr))+"Myr")
-        
-    gravity_sph.stop()

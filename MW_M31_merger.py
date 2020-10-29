@@ -70,6 +70,9 @@ parser.add_argument('--igm',
 parser.add_argument('--test', 
                     help='Use test initial conditions', 
                     action='store_true')
+parser.add_argument('--nomerger', 
+                    help='Stop after galaxy initialization', 
+                    action='store_true')
 parser.add_argument('-f', 
                     help='Foo value, defined for jupyter notebook compatibility')
 args = parser.parse_args()
@@ -79,6 +82,7 @@ SOLAR = args.solar
 DISK = args.disk
 IGM = args.igm
 TEST = args.test
+NO_MERGER = args.nomerger
 
 if PLOT:
     print('Plots turned on', flush=True)
@@ -104,7 +108,6 @@ elif TEST:
 mw_parameters = {'name': 'mw',
                  #halo parameters
                  'n_halo': n_halo,
-                 "halo_streaming_fraction": 0.,
                  'halo_scale_length': 12.96 | units.kpc,
                  #disk parameters
                  'disk_number_of_particles' : n_disk,
@@ -116,24 +119,30 @@ mw_parameters = {'name': 'mw',
                  #bulge parameters
                  'bulge_scale_radius' : 0.788 | units.kpc,
                  'bulge_number_of_particles' : n_bulge,
+                 #unused parameters (unclear effect)
+                 "halo_streaming_fraction": 0.,
                  "bulge_streaming_fraction": 0.,
                  #unused parameters (they cause problems)
                  'disk_scale_length_of_sigR2': 2.806 | units.kpc}
 
 m31_parameters = {'name': 'm31_not_displaced',
+                  #halo parameters
                   'n_halo': n_halo,
-                  #'halo_outer_radius' : 201.619995 | units.kpc,
-                  "halo_streaming_fraction": 0.,
                   'halo_scale_length': 12.94 | units.kpc,
+                  #disk parameters
                   'disk_number_of_particles' : n_disk,
                   'disk_mass' : 33.40 * 2.33 * 10e9 | units.MSun,
                   'disk_scale_length' : 5.577 | units.kpc,
                   'disk_outer_radius' : 30 | units.kpc, 
                   'disk_scale_height_sech2' : 0.3 | units.kpc,
+                  'disk_central_radial_velocity_dispersion': 0.7,
+                  #bulge parameters
                   'bulge_scale_radius' : 1.826 | units.kpc,
                   'bulge_number_of_particles' : n_bulge,
+                  #unused parameters (unclear effect)
+                  "halo_streaming_fraction": 0.,
                   "bulge_streaming_fraction": 0.,
-                  'disk_central_radial_velocity_dispersion': 0.7,
+                  #unused parameters (they cause problems)
                   'disk_scale_length_of_sigR2': 5.577 | units.kpc}
 
 #simulation parameters
@@ -192,6 +201,11 @@ if os.path.exists(mw_data_path) and os.path.exists(m31_not_displaced_data_path):
 else:
     mw = gal.make_galaxy(converter, mw_parameters, SCRIPT_PATH, test=TEST)
     m31_not_displaced = gal.make_galaxy(converter, m31_parameters, SCRIPT_PATH, test=TEST)
+
+
+if NO_MERGER:
+    print('Quitting after galaxy initialization')
+    quit()
 
 
 if all(value == False for value in [SOLAR, DISK, IGM]):

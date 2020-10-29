@@ -1,5 +1,0 @@
-#!/bin/bash
-
-jupyter nbconvert --to script --no-prompt MW_M31_merger.ipynb
-
-mpiexec amuse MW_M31_merger.py --plot --test

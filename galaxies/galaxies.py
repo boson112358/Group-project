@@ -1,8 +1,11 @@
+###### importing modules ######
+
 import numpy as np
 import matplotlib.pyplot as plt
 import random
 import math
 import sys
+from matplotlib.colors import LogNorm
 
 from amuse.lab import *
 from amuse.ext.galactics_model import new_galactics_model
@@ -13,7 +16,9 @@ import progressbar as pbar
 import progressbar.widgets as pbwg
 
 
-def plot_merger(mw_halo, mw_disk, m31_halo, m31_disk, title, script_path, filename):
+###### plot functions ######
+
+def plot_merger(mw_halo, mw_disk, mw_bulge, m31_halo, m31_disk, m31_bulge, title, script_path, filename):
     x_label = "X [kpc]"
     y_label = "Y [kpc]"
     
@@ -24,22 +29,26 @@ def plot_merger(mw_halo, mw_disk, m31_halo, m31_disk, title, script_path, filena
     plt.title(title)
     plt.xlabel(x_label)
     plt.ylabel(y_label)
-    plt.xlim(-760, 760)
-    plt.ylim(-760, 760)
+    plt.xlim(-500, 500)
+    plt.ylim(-500, 500)
 
     #plotting mw_halo and mw_disk
     #ax.scatter(mw_halo.x.value_in(units.kpc), mw_halo.y.value_in(units.kpc),
                #c='tab:blue', alpha=0.6, s=1, lw=0)
     ax.scatter(mw_disk.x.value_in(units.kpc), mw_disk.y.value_in(units.kpc),
-               c='tab:blue', alpha=1, s=1, lw=0, label='mw')
+               c='cyan', alpha=1, s=1, lw=0, label='mw')
+    ax.scatter(mw_bulge.x.value_in(units.kpc), mw_bulge.y.value_in(units.kpc),
+               c='blue', alpha=1, s=1, lw=0, label='mw')
     
     #plotting m31_halo and m31_disk
     #ax.scatter(m31_halo.x.value_in(units.kpc), m31_halo.y.value_in(units.kpc),
                #c='tab:orange', alpha=0.6, s=1, lw=0)
     ax.scatter(m31_disk.x.value_in(units.kpc), m31_disk.y.value_in(units.kpc),
-               c='tab:orange', alpha=1, s=1, lw=0, label='m31')
+               c='orange', alpha=1, s=1, lw=0, label='m31')
+    ax.scatter(m31_bulge.x.value_in(units.kpc), m31_bulge.y.value_in(units.kpc),
+               c='red', alpha=1, s=1, lw=0, label='m31')
     
-    plt.legend(loc='upper_right')
+    plt.legend(loc='upper right')
     
     savepath = script_path + '/plots/merger_plots/'
     
@@ -87,9 +96,7 @@ def contour_merger(galaxy1, galaxy2, title, script_path, filename):
     y_label = "Y [kpc]"
     xy_range = [[-760, 760], [-760, 760]]
     
-    counts,ybins,xbins,image = plt.hist2d(x, y, bins=400, range=xy_range,
-                                          #normed=True
-                                          )
+    counts,ybins,xbins,image = plt.hist2d(x, y, bins=400, range=xy_range)
     plt.close()
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -99,7 +106,8 @@ def contour_merger(galaxy1, galaxy2, title, script_path, filename):
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     
-    cont = ax.contourf(counts, extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()], cmap='RdGy')
+    cont = ax.contourf(counts, norm=LogNorm(), levels=[1e-1, 1, 10, 100, 1e3, 1e4, 1e5],
+                       extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()], cmap='RdGy')
     
     cbar = plt.colorbar(cont)
     cbar.set_label('Density')
@@ -156,22 +164,22 @@ def make_plot_galstars(disk, stars, title, script_path, filename):
     savepath = script_path + '/plots/solar_system_plots/'
     
     plt.savefig(savepath + filename)
+    
+    
+###### galaxy functions ######
 
-
-def make_galaxies(M_galaxy, R_galaxy, n_halo, n_bulge, n_disk, script_path, 
-                  separation=780, 
-                  M31_velocity=50, 
-                  test=False):
-    converter = nbody_system.nbody_to_si(M_galaxy, R_galaxy)
+def make_galaxies_test(converter, galaxy_dict, script_path, test=False):
+    
+    n_halo = galaxy_dict['n_halo']
     
     widgets = ['Building galaxy 1: ', pbwg.AnimatedMarker(), ' ',
                pbwg.Timer(), pbwg.EndMsg()]
     with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
         galaxy1 = new_galactics_model(n_halo,
                                       converter,
-                                      #do_scale = True,
-                                      bulge_number_of_particles=n_bulge,
-                                      disk_number_of_particles=n_disk)
+                                      disk_outer_radius = galaxy_dict['disk_outer_radius'],
+                                      bulge_number_of_particles=galaxy_dict['bulge_number_of_particles'],
+                                      disk_number_of_particles=galaxy_dict['disk_number_of_particles'],)
     
     widgets = ['Building galaxy 2: ', pbwg.AnimatedMarker(),
                pbwg.EndMsg()]
@@ -206,16 +214,20 @@ def make_galaxy(converter, galaxy_dict, script_path, test=False):
     with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
         galaxy = new_galactics_model(n_halo,
                                      converter,
-                                     halo_outer_radius = galaxy_dict['halo_outer_radius'],
+                                     #halo_outer_radius = galaxy_dict['halo_outer_radius'],
+                                     #halo_streaming_fraction = galaxy_dict["halo_streaming_fraction"],
+                                     halo_scale_length = galaxy_dict['halo_scale_length'],
                                      disk_number_of_particles = galaxy_dict['disk_number_of_particles'],
                                      disk_mass = galaxy_dict['disk_mass'],
                                      disk_scale_length = galaxy_dict['disk_scale_length'],
                                      disk_outer_radius = galaxy_dict['disk_outer_radius'],
                                      disk_scale_height_sech2 = galaxy_dict['disk_scale_height_sech2'],
                                      bulge_scale_radius = galaxy_dict['bulge_scale_radius'],
-                                     bulge_number_of_particles = galaxy_dict['bulge_number_of_particles'])
-                                     #central_radial_vel_dispersion = 0.7 * 100 | units.kms,
-                                     #scale_length_of_sigR2 = 2.806 | units.kpc)
+                                     bulge_number_of_particles = galaxy_dict['bulge_number_of_particles'],
+                                     #bulge_streaming_fraction = galaxy_dict["bulge_streaming_fraction"],
+                                     #disk_scale_length_of_sigR2 = galaxy_dict['disk_scale_length_of_sigR2'],
+                                     disk_central_radial_velocity_dispersion = galaxy_dict['disk_central_radial_velocity_dispersion'],
+                                     output_directory = '/data1/brentegani/')
     
     if not test:
         galaxy_data_path = script_path + '/galaxies/data/{}_full'.format(galaxy_dict['name'])
@@ -229,6 +241,8 @@ def make_galaxy(converter, galaxy_dict, script_path, test=False):
 
     return galaxy
 
+
+######  galaxy rototranslation ######
 
 def displace_galaxy(galaxy, rotation_mat, translation_vector, radial_velocity, transverse_velocity):
     widgets = ['Adjusting relative velocities and orientations: ', 
@@ -256,6 +270,8 @@ def displace_galaxy(galaxy, rotation_mat, translation_vector, radial_velocity, t
     return displaced_galaxy
 
 
+###### test disk function ######
+
 def test_particles(galaxy, n_halo, n_bulge, n_disk):
     _dsk = Particles(len(galaxy))
     _dsk.mass = galaxy.mass
@@ -265,35 +281,58 @@ def test_particles(galaxy, n_halo, n_bulge, n_disk):
     return disk
 
 
-def simulate_merger(galaxy1, galaxy2, n_halo, t_end, script_path, plot=False):
+###### plot condition function ######
+
+def check_last_plot_time(current_time, last_plot_time, plot_interval, unit=units.Myr):
+    if (current_time - last_plot_time).value_in(unit) >= plot_interval.value_in(unit):
+        return True
+    else:
+        return False
+    
+    
+###### merger function ######
+    
+def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, script_path, interval=0.1|units.Myr, plot=False):
     converter = nbody_system.nbody_to_si(1.0e12|units.MSun, 100|units.kpc)
     
     dynamics_code = Gadget2(converter, number_of_workers=4)
     dynamics_code.parameters.epsilon_squared = (100 | units.parsec)**2
     
-    set1 = dynamics_code.dm_particles.add_particles(galaxy1)
-    set2 = dynamics_code.dm_particles.add_particles(galaxy2)
+    if isinstance(dynamics_code, Gadget2) or isinstance(dynamics_code, Fi):
+        #when using Gadget2 or Fi
+        set1 = dynamics_code.dm_particles.add_particles(galaxy1)
+        set2 = dynamics_code.dm_particles.add_particles(galaxy2)
+    elif isinstance(dynamics_code, BHTree):
+        #when using BHTree
+        set1 = dynamics_code.particles.add_particles(galaxy1)
+        set2 = dynamics_code.particles.add_particles(galaxy2)
     
     dynamics_code.particles.move_to_center()
-    #dynamics_code.parameters.timestep = 0.5 | units.Myr
     
-    halo1 = set1[n_halo:]
-    disk1 = set1[:n_halo]
+    if isinstance(dynamics_code, Fi):
+        dynamics_code.update_particle_set()
+        
+    dynamics_code.timestep = interval
     
-    halo2 = set2[n_halo:]
-    disk2 = set2[:n_halo]
+    halo1 = set1[n_disk+n_bulge:]
+    bulge1 = set1[n_disk:n_disk+n_bulge]
+    disk1 = set1[:n_disk]
+    
+    halo2 = set2[n_disk+n_bulge:]
+    bulge2 = set2[n_disk:n_disk+n_bulge]
+    disk2 = set2[:n_disk]
     
     if plot == True:
         plot_number = 0
+        last_plot_time = 0 | units.Myr
         contour_merger(set1, set2, 
                 "MW M31 merger\nt = 0 Myr", script_path, 'mw_m31_cmerger_' + str(plot_number).zfill(4))
-        plot_merger(halo1, disk1, halo2, disk2, 
+        plot_merger(halo1, disk1, bulge1, halo2, disk2, bulge2,
                     "MW M31 merger\nt = 0 Myr", script_path, 'mw_m31_merger_' + str(plot_number).zfill(4))
-        plot_zoomed_merger(halo1, disk1, halo2, disk2, 
-                           "MW M31 merger\nt = 0 Myr", script_path, 'mw_m31_merger_' + str(plot_number).zfill(4))
+        #plot_zoomed_merger(halo1, disk1, halo2, disk2, 
+        #                   "MW M31 merger\nt = 0 Myr", script_path, 'mw_m31_merger_' + str(plot_number).zfill(4))
     
     current_iter = 0
-    interval = 0.5 | units.Myr
     t_end_in_Myr = t_end.as_quantity_in(units.Gyr)
     total_iter = int(t_end_in_Myr/interval) + 1
     
@@ -307,22 +346,25 @@ def simulate_merger(galaxy1, galaxy2, n_halo, t_end, script_path, plot=False):
         current_iter +=1
         
         dynamics_code.evolve_model(dynamics_code.model_time + interval)
+        if isinstance(dynamics_code, Fi):
+            dynamics_code.update_particle_set()
         
         if plot == True:
-            if current_iter in [10*i for i in range(1, total_iter)]:
+            if check_last_plot_time(dynamics_code.model_time, last_plot_time, t_end/100):
                 plot_number += 1
+                last_plot_time = dynamics_code.model_time
                 contour_merger(set1, set2, 
                                "MW M31 merger\nt = {} Myr".format(int(np.round(dynamics_code.model_time.value_in(units.Myr), 
                                                                                decimals=0))),
                                script_path, 'mw_m31_cmerger_' + str(plot_number).zfill(4))
-                plot_merger(halo1, disk1, halo2, disk2, 
+                plot_merger(halo1, disk1, bulge1, halo2, disk2, bulge2,
                             "MW M31 merger\nt = {} Myr".format(int(np.round(dynamics_code.model_time.value_in(units.Myr), 
                                                                             decimals=0))),
                             script_path, 'mw_m31_merger_' + str(plot_number).zfill(4))
-                plot_zoomed_merger(halo1, disk1, halo2, disk2, 
-                                   "MW M31 merger\nt = {} Myr".format(int(np.round(dynamics_code.model_time.value_in(units.Myr), 
-                                                                                   decimals=0))),
-                                   script_path, 'mw_m31_merger_' + str(plot_number).zfill(4))
+                #plot_zoomed_merger(halo1, disk1, halo2, disk2, 
+                #                   "MW M31 merger\nt = {} Myr".format(int(np.round(dynamics_code.model_time.value_in(units.Myr), 
+                #                                                                   decimals=0))),
+                #                   script_path, 'mw_m31_merger_' + str(plot_number).zfill(4))
         
         progress.update(current_iter)
         
@@ -333,12 +375,12 @@ def simulate_merger(galaxy1, galaxy2, n_halo, t_end, script_path, plot=False):
         contour_merger(set1, set2,
                        "MW M31 merger\nt = {} Myr".format(int(np.round(t_end.value_in(units.Myr), decimals=0))),
                        script_path, 'mw_m31_cmerger_' + str(plot_number).zfill(4))
-        plot_merger(halo1, disk1, halo2, disk2,
+        plot_merger(halo1, disk1, bulge1, halo2, disk2, bulge2,
                     "MW M31 merger\nt = {} Myr".format(int(np.round(t_end.value_in(units.Myr), decimals=0))),
                     script_path, 'mw_m31_merger_' + str(plot_number).zfill(4))
-        plot_zoomed_merger(halo1, disk1, halo2, disk2,
-                           "MW M31 merger\nt = {} Myr".format(int(np.round(t_end.value_in(units.Myr), decimals=0))),
-                           script_path, 'mw_m31_merger_' + str(plot_number).zfill(4))
+        #plot_zoomed_merger(halo1, disk1, halo2, disk2,
+        #                   "MW M31 merger\nt = {} Myr".format(int(np.round(t_end.value_in(units.Myr), decimals=0))),
+        #                   script_path, 'mw_m31_merger_' + str(plot_number).zfill(4))
         
     dynamics_code.stop()
     
@@ -394,6 +436,8 @@ def simulate_merger_with_particles(galaxy1, galaxy2, converter, n_halo, n_bulge,
         
     gravity.stop()
     
+    
+###### single galaxy simulation ######
 
 def mw_and_stars(galaxy1, stars, galaxy_converter, star_solver, n_halo, t_end, script_path, plot=False):
     leapfrog = True

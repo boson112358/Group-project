@@ -8,15 +8,13 @@ if os.environ.get('DISPLAY','') == '' and os.name != 'nt':
 
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 import inspect
 import sys
 
 #finds script path
-#filename = inspect.getframeinfo(inspect.currentframe()).filename
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
-#add progressbar path to possible paths to import modules
-sys.path.insert(1, SCRIPT_PATH + '/python-progressbar/')
 
 #creates plots folder
 plot_folder = SCRIPT_PATH + '/plots/testrun/'
@@ -24,16 +22,35 @@ if not os.path.exists(plot_folder):
     os.makedirs(plot_folder)
     
 #ignore warnings (AmuseWarning at end of simulation)
-
 import warnings
 warnings.filterwarnings('ignore')
+
+#defines parser for terminal usage
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--nosimulation', 
+                    help='Skip galaxy simulation', 
+                    action='store_true')
+#parser.add_argument('-f', 
+#                    help='Foo value, defined for jupyter notebook compatibility')
+args = parser.parse_args()
+
+NOSIMULATION = args.nosimulation
+
+if NOSIMULATION:
+    print('Skipping galaxy simulation', flush=True)
+else:
+    print('Simuation test run', flush=True)
 
 #progressbar import
 import progressbar as pbar
 import progressbar.widgets as pbwg
 
-from amuse.lab import *
+from amuse.lab import units, Particle, read_set_from_file, nbody_system
 
+#importing data analysis functions
+import data_analysis as da
     
 ###### initial conditions ######
 
@@ -82,29 +99,46 @@ mw_parameters = {'name': 'mw',
 
 ###### loading galaxy ######
 
-print('Simuation test run', flush=True)
-
 converter = nbody_system.nbody_to_si(scale_mass_galaxy, scale_radius_galaxy)
 
 mw_data_path = SCRIPT_PATH + '/galaxies/data/testrun/{}_test'.format(mw_parameters['name'])
 
-widgets = ['Found galaxies data, loading: ', pbwg.AnimatedMarker(), pbwg.EndMsg()]
+widgets = ['Found galaxy data, loading: ', pbwg.AnimatedMarker(), pbwg.EndMsg()]
 with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
     mw = read_set_from_file(mw_data_path, "hdf5")
-    
-mw_halo = mw[n_disk+n_bulge:]
-mw_bulge = mw[n_disk:n_disk+n_bulge]
-mw_disk = mw[:n_disk]
 
-print('Correcting particles velocities ...', flush=True)
-mw[n_disk:n_disk+n_bulge].velocity = mw[n_disk:n_disk+n_bulge].velocity/10000
+#print('Correcting particles velocities ...', flush=True)
+#mw[n_disk:n_disk+n_bulge].velocity = mw[n_disk:n_disk+n_bulge].velocity/10000
+
+
+###### model analysis ######
+
+mw_total_mass = da.galaxy_total_mass(mw)
+mw_halo, mw_disk, mw_bulge = da.galaxy_structures(mw, n_disk, n_bulge)
+print('Halo particles: {}; expected: {}'.format(len(mw_halo), n_halo)) 
+print('Disk particles: {}; expected: {}'.format(len(mw_disk), n_disk))
+print('Bulge particles: {}; expected: {}'.format(len(mw_bulge), n_bulge))
+
+widgets = ['Plotting galaxy structures: ', pbwg.AnimatedMarker(), pbwg.EndMsg()]
+with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
+    for structure, filename in zip([mw_halo, mw_disk, mw_bulge], ['mw_halo', 'mw_disk', 'mw_bulge']):
+        da.plot_galaxy_structure(structure, filename)
+
+widgets = ['Computing galaxy velocities: ', pbwg.AnimatedMarker(), pbwg.EndMsg()]
+with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
+    halo_dict, disk_dict, bulge_dict = da.galaxy_structure_velocity(mw, n_disk, n_bulge)
     
-import galaxies as gal
-print('Saving plots in: {}'.format(gal.__SCRIPT_PATH__), flush=True)
+halo_df = pd.DataFrame(halo_dict)
+print(halo_df)
+
 
 ###### running simulation ######
 
-t_end_int = int(np.round(t_end.value_in(units.Myr), decimals=0))
-t_step_int = int(np.round(t_step.value_in(units.Myr), decimals=0))
-print('Simulating mw (t = {} Myr, step = {} Myr) ...'.format(t_end_int, t_step_int), flush=True)
-gal.simulate_single_galaxy(mw, converter, n_halo, n_bulge, n_disk, t_end, interval=t_step, plot=True)
+if not NOSIMULATION:
+    import galaxies as gal
+    print('Saving plots in: {}'.format(gal.__SCRIPT_PATH__), flush=True)
+    
+    t_end_int = int(np.round(t_end.value_in(units.Myr), decimals=0))
+    t_step_int = int(np.round(t_step.value_in(units.Myr), decimals=0))
+    print('Simulating mw (t = {} Myr, step = {} Myr) ...'.format(t_end_int, t_step_int), flush=True)
+    gal.simulate_single_galaxy(mw, converter, n_halo, n_bulge, n_disk, t_end, interval=t_step, plot=True)

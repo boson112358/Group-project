@@ -170,8 +170,6 @@ def make_plot_galstars(disk, stars, title, script_path, filename):
     
 def plot_single_galaxy(halo, disk, bulge, title, filename):
     
-    global __SCRIPT_PATH__
-    
     x_label = "X [kpc]"
     y_label = "Y [kpc]"
     

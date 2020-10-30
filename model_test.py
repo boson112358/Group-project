@@ -21,6 +21,11 @@ plot_folder = SCRIPT_PATH + '/plots/testrun/'
 if not os.path.exists(plot_folder):
     os.makedirs(plot_folder)
     
+#creates csv folder
+csv_folder = SCRIPT_PATH + '/data/galaxy-csv/'
+if not os.path.exists(csv_folder):
+    os.makedirs(csv_folder)
+    
 #ignore warnings (AmuseWarning at end of simulation)
 import warnings
 warnings.filterwarnings('ignore')
@@ -123,14 +128,51 @@ widgets = ['Plotting galaxy structures: ', pbwg.AnimatedMarker(), pbwg.EndMsg()]
 with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
     for structure, filename in zip([mw_halo, mw_disk, mw_bulge], ['mw_halo', 'mw_disk', 'mw_bulge']):
         da.plot_galaxy_structure(structure, filename)
+        
+halo_df_path = csv_folder + 'mw_halo_velocities.csv'
+disk_df_path = csv_folder + 'mw_disk_velocities.csv'
+bulge_df_path = csv_folder + 'mw_bulge_velocities.csv'
 
-widgets = ['Computing galaxy velocities: ', pbwg.AnimatedMarker(), pbwg.EndMsg()]
+if os.path.exists(halo_df_path) and os.path.exists(disk_df_path) and os.path.exists(bulge_df_path):
+    widgets = ['Found galaxy velocities data, loading: ', pbwg.AnimatedMarker(), pbwg.EndMsg()]
+    with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
+        halo_df = pd.read_csv(halo_df_path)
+        disk_df = pd.read_csv(disk_df_path)
+        bulge_df = pd.read_csv(bulge_df_path)
+else:
+    widgets = ['Computing galaxy velocities: ', pbwg.AnimatedMarker(), pbwg.EndMsg()]
+    with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
+        halo_dict, disk_dict, bulge_dict = da.galaxy_structure_velocity(mw, n_disk, n_bulge)
+        halo_df = pd.DataFrame(halo_dict)
+        disk_df = pd.DataFrame(disk_dict)
+        bulge_df = pd.DataFrame(bulge_dict)
+    widgets = ['Saving logs: ', pbwg.AnimatedMarker(), pbwg.EndMsg()]
+    with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
+        halo_df.to_csv('{}{}.{}'.format(csv_folder, 'mw_halo_velocities', 'csv'), index=False)
+        disk_df.to_csv('{}{}.{}'.format(csv_folder, 'mw_disk_velocities', 'csv'), index=False)
+        bulge_df.to_csv('{}{}.{}'.format(csv_folder, 'mw_bulge_velocities', 'csv'), index=False)
+        
+widgets = ['Plotting bulge velocities: ', pbwg.AnimatedMarker(), pbwg.EndMsg()]
 with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
-    halo_dict, disk_dict, bulge_dict = da.galaxy_structure_velocity(mw, n_disk, n_bulge)
-    
-halo_df = pd.DataFrame(halo_dict)
-print(halo_df)
+    com_distance = bulge_df['com_distance'].values    #deprecated in pandas 0.24.1 which I cannot install on STRW computer
+    vel_components = [bulge_df['angular_velocity'], bulge_df['radial_velocity'], 
+                      bulge_df['tangential_velocity'], bulge_df['total_velocity']]
+    plot_prefix = 'mw_bulge_'
+    for component, filename in zip(vel_components, ['angular_velocity', 'radial_velocity', 'tangential_velocity', 'total_velocity']):
+        da.plot_velocity_component(com_distance, component, plot_prefix + filename)
 
+vel_factor = 1/6.5
+        
+widgets = ['Plotting galaxy rotation curve (1/6.5 of v): ', pbwg.AnimatedMarker(), pbwg.EndMsg()]
+with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
+    com_distance = [#halo_df['com_distance'].values, 
+                    disk_df['com_distance'].values * vel_factor, 
+                    bulge_df['com_distance'].values * vel_factor]
+    total_vel = [#halo_df['total_velocity'].values, 
+                 disk_df['total_velocity'].values * vel_factor, 
+                 bulge_df['total_velocity'].values * vel_factor]
+    
+    da.galaxy_rotation_curve(com_distance, total_vel, 'mw_rotation_curve', labels=['disk', 'bulge'])
 
 ###### running simulation ######
 

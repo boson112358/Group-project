@@ -36,6 +36,23 @@ def position_limit(structure, axes=[0, 1]):
     return max_coordinate
 
 
+def average_velocity_at_radius(radius, velocity, interval_length=1/25, max_radius=30):
+    interval_limit = np.arange(0, max_radius + interval_length, step=interval_length)
+    average_vel = []
+    for i in range(1, len(interval_limit), 1):
+        bin_l = interval_limit[i-1]
+        bin_r = interval_limit[i]
+        bin_velocity = []
+        for index, value in enumerate(radius):
+            if value > bin_l and value <= bin_r:
+                bin_velocity.append(velocity[index])
+        bin_average = np.mean(bin_velocity)
+        average_vel.append(bin_average)
+    
+    intervals = np.delete(interval_limit, -1) + (1/2 * interval_length)  #the point is in the middle of the interval
+    
+    return intervals, average_vel
+
 ###### plot functions ######
     
 def plot_galaxy_structure(structure, filename, title=None, label=None):
@@ -68,24 +85,27 @@ def plot_galaxy_structure(structure, filename, title=None, label=None):
     plt.savefig(PLOT_FOLDER + filename)
     
     
-def plot_velocity_component(distance, component, filename, label=None):
+def plot_velocity_component(distance, component, filename, title=None, label=None):
     x_label = "Distance from galaxy center of mass [kpc]"
     y_label = "Velocity [km/s]"
     
     fig = plt.figure()
     ax = fig.add_subplot(111)
     
-    x_max = np.amax(distance) + 10
+    x_max = np.amax(distance) + 0.1
     y_max = np.amax(component) + 10
     y_min = np.amin(component) - 10
+    
+    if title == None:
+        title = filename
     
     plt.title(title)
     plt.xlabel(x_label)
     plt.ylabel(y_label)
-    plt.xlim(-10, x_max)
+    plt.xlim(-0.1, x_max)
     plt.ylim(y_min, y_max)
 
-    ax.scatter(distance.value_in(units.kpc), component.value_in(units.kpc),
+    ax.scatter(distance, component,
                c='tab:blue', alpha=1, s=1, lw=0, label=label)
     
     if label == None:
@@ -93,7 +113,54 @@ def plot_velocity_component(distance, component, filename, label=None):
     else:
         plt.legend(loc='upper right')
   
-    plt.savefig(PLOT_FOLDER)
+    plt.savefig(PLOT_FOLDER + filename)
+    
+    
+def structure_rotation_curve(ax, distance, total_velocity, label=None, color='tab:blue'):
+    intervals, average_vel = average_velocity_at_radius(distance, total_velocity)
+
+    ax.scatter(intervals, average_vel, 
+               c=color, alpha=1, s=5, label=label)
+    
+    
+def galaxy_rotation_curve(structure_distances, structure_velocities, filename, title=None, labels=None):
+    x_label = "Distance from galaxy center of mass [kpc]"
+    y_label = "Velocity [km/s]"
+    
+    if labels == None:
+        labels = [None for i in range(len(structure_distances))]
+    
+    default_colors = ['tab:blue', 'tab:orange', 'tab:green']
+    used_colors = [default_colors[i] for i in range(len(structure_distances))]
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    
+    if labels == None:
+        labels = [None for i in range(len(structure_distances))]
+    
+    for distance, velocity, c, label, in zip(structure_distances, structure_velocities, used_colors, labels):
+        structure_rotation_curve(ax, distance, velocity, label=label, color=c)
+    
+    #x_max = np.amax(distance) + 0.1
+    #y_max = np.amax(total_velocity) + 10
+    #y_min = np.amin(total_velocity) - 10
+    
+    if title == None:
+        title = filename
+    
+    plt.title(title)
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    #plt.xlim(-0.1, x_max)
+    #plt.ylim(y_min, y_max)
+    
+    if label == None:
+        pass
+    else:
+        plt.legend(loc='upper right')
+  
+    plt.savefig(PLOT_FOLDER + filename)
     
     
 ###### velocity functions ######
@@ -156,11 +223,11 @@ def galaxy_structure_velocity(galaxy, n_disk, n_bulge):
         for body in structure:
             com_dist, total_v, radial_v, tang_v, angular_v = velocity_components(body, com)
             
-            com_dist_list.append(com_dist)
-            angular_v_list.append(total_v)
-            radial_v_list.append(radial_v)
-            tang_v_list.append(tang_v)
-            total_v_list.append(angular_v)
+            com_dist_list.append(com_dist.value_in(units.kpc))
+            angular_v_list.append(angular_v.value_in(units.km/units.s))
+            radial_v_list.append(radial_v.value_in(units.km/units.s))
+            tang_v_list.append(tang_v.value_in(units.km/units.s))
+            total_v_list.append(total_v.value_in(units.km/units.s))
         
         dictionary.update({'com_distance': com_dist_list})
         dictionary.update({'angular_velocity': angular_v_list})

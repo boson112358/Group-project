@@ -39,8 +39,8 @@ def make_solar_system(N, solar_position, system_radius, galaxy_velocity, solar_t
         
         #print(360*angle/(2*math.pi)) you can check that the angles are correct this way
         
-        body.velocity = [math.sin(angle) * solar_tang_velocity + galaxy_velocity[0], 
-                         - math.cos(angle) * solar_tang_velocity + galaxy_velocity[1], 
+        body.velocity = [-math.sin(angle) * solar_tang_velocity + galaxy_velocity[0], 
+                         math.cos(angle) * solar_tang_velocity + galaxy_velocity[1], 
                          galaxy_velocity[2]] 
     return particles
 

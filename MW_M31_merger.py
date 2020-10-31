@@ -19,14 +19,12 @@ import sys
 #finds script path
 filename = inspect.getframeinfo(inspect.currentframe()).filename
 SCRIPT_PATH = os.path.dirname(os.path.abspath(filename))
-#add progressbar path to possible paths to import modules
-sys.path.insert(1, SCRIPT_PATH + '/python-progressbar/')
 
 
 plot_folders = [SCRIPT_PATH + '/plots', 
-                SCRIPT_PATH + '/plots/merger-plots',
+                SCRIPT_PATH + '/data/merger_plots',
                 SCRIPT_PATH + '/plots/solar-system_plots',
-                SCRIPT_PATH + '/plots/merger-contour/',
+                SCRIPT_PATH + '/data/merger_contour/',
                 SCRIPT_PATH + '/plots/zoomed-merger-plots/']
 
 for folder in plot_folders:
@@ -73,6 +71,9 @@ parser.add_argument('--test',
 parser.add_argument('--nomerger', 
                     help='Stop after galaxy initialization', 
                     action='store_true')
+parser.add_argument('--correction', 
+                    help='Correct galaxy velocity and mass', 
+                    action='store_true')
 parser.add_argument('-f', 
                     help='Foo value, defined for jupyter notebook compatibility')
 args = parser.parse_args()
@@ -82,7 +83,8 @@ SOLAR = args.solar
 DISK = args.disk
 IGM = args.igm
 TEST = args.test
-NO_MERGER = args.nomerger
+NOMERGER = args.nomerger
+CORRECTION = args.correction
 
 if PLOT:
     print('Plots turned on', flush=True)
@@ -147,7 +149,7 @@ m31_parameters = {'name': 'm31_not_displaced',
 
 #simulation parameters
 scale_mass_galaxy = 1.0e12 | units.MSun
-scale_radius_galaxy = 10 | units.kpc
+scale_radius_galaxy = 100 | units.kpc
 t_end = 400 | units.Myr
 
 #Solar system starting conditions
@@ -180,18 +182,19 @@ transverse_velocity = 50 * np.array([0.5236, 0.6024, 0.6024]) | units.kms
 from galaxies import galaxies as gal
 from stars import solar_system as sol
 from igmedium import IGM_homogenous_Gadget2 as igm
+from data_analysis import data_analysis as da
 
 
 #Galaxy initialization
 converter = nbody_system.nbody_to_si(scale_mass_galaxy, scale_radius_galaxy)
 
 if not TEST:
-    mw_data_path = SCRIPT_PATH + '/galaxies/data/{}_full'.format(mw_parameters['name'])
-    m31_not_displaced_data_path = SCRIPT_PATH + '/galaxies/data/{}_full'.format(m31_parameters['name'])
+    mw_data_path = SCRIPT_PATH + '/data/{}_full'.format(mw_parameters['name'])
+    m31_not_displaced_data_path = SCRIPT_PATH + '/data/{}_full'.format(m31_parameters['name'])
     
 elif TEST:
-    mw_data_path = SCRIPT_PATH + '/galaxies/data/{}_test'.format(mw_parameters['name'])
-    m31_not_displaced_data_path = SCRIPT_PATH + '/galaxies/data/{}_test'.format(m31_parameters['name']) 
+    mw_data_path = SCRIPT_PATH + '/data/{}_test'.format(mw_parameters['name'])
+    m31_not_displaced_data_path = SCRIPT_PATH + '/data/{}_test'.format(m31_parameters['name']) 
 
 if os.path.exists(mw_data_path) and os.path.exists(m31_not_displaced_data_path):
     widgets = ['Found galaxies data, loading: ', pbwg.AnimatedMarker(), pbwg.EndMsg()]
@@ -203,9 +206,21 @@ else:
     m31_not_displaced = gal.make_galaxy(converter, m31_parameters, SCRIPT_PATH, test=TEST)
 
 
-if NO_MERGER:
+if NOMERGER:
     print('Quitting after galaxy initialization')
     quit()
+
+
+if CORRECTION:
+    print('Correcting velocities and mass: ...', flush=True)
+    vel_factor = 1/6.5
+    mass_factor = 1/1000
+
+    mw.velocity = mw.velocity * vel_factor
+    m31_not_displaced.velocity =  m31_not_displaced.velocity * vel_factor
+
+    mw.mass = mw.mass * mass_factor
+    m31_not_displaced.mass =  m31_not_displaced.mass * mass_factor
 
 
 if all(value == False for value in [SOLAR, DISK, IGM]):

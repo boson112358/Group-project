@@ -33,7 +33,7 @@ for folder in plot_folders:
     if not os.path.exists(folder):
         os.makedirs(folder)
     
-gal_folder = SCRIPT_PATH + '/galaxies/data'
+gal_folder = SCRIPT_PATH + '/data/'
 
 if not os.path.exists(gal_folder):
     os.makedirs(gal_folder)

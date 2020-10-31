@@ -192,14 +192,15 @@ def plot_single_galaxy(halo, disk, bulge, title, filename):
     
     plt.legend(loc='upper right')
     
-    savepath = __SCRIPT_PATH__ + '/plots/testrun/'
+    savepath = __SCRIPT_PATH__ + '/data/sim_plots/'
     
     plt.savefig(savepath + filename)
     
     
 ###### galaxy functions ######
 
-def make_galaxy_test(converter, galaxy_dict, script_path):
+
+def make_galaxy_test(converter, galaxy_dict, out_dir=__SCRIPT_PATH__+'/data/model/'):
 
     n_halo = galaxy_dict['n_halo']
 
@@ -210,16 +211,16 @@ def make_galaxy_test(converter, galaxy_dict, script_path):
                                      converter,
                                      #halo parameters
                                      #halo_outer_radius = galaxy_dict['halo_outer_radius'],
-                                     #halo_scale_length = galaxy_dict['halo_scale_length'],
+                                     halo_scale_length = galaxy_dict['halo_scale_length'],
                                      #disk parameters
                                      disk_number_of_particles = galaxy_dict['disk_number_of_particles'],
                                      disk_mass = galaxy_dict['disk_mass'],
-                                     #disk_scale_length = galaxy_dict['disk_scale_length'],
+                                     disk_scale_length = galaxy_dict['disk_scale_length'],
                                      disk_outer_radius = galaxy_dict['disk_outer_radius'],
-                                     #disk_scale_height_sech2 = galaxy_dict['disk_scale_height_sech2'],
-                                     #disk_central_radial_velocity_dispersion= galaxy_dict['disk_central_radial_velocity_dispersion'],
+                                     disk_scale_height_sech2 = galaxy_dict['disk_scale_height_sech2'],
+                                     disk_central_radial_velocity_dispersion=galaxy_dict['disk_central_radial_velocity_dispersion'],
                                      #bulge paramaters
-                                     #bulge_scale_radius = galaxy_dict['bulge_scale_radius'],
+                                     bulge_scale_radius = galaxy_dict['bulge_scale_radius'],
                                      bulge_number_of_particles = galaxy_dict['bulge_number_of_particles'],
                                      #unused parameters
                                      #disk_scale_length_of_sigR2 = galaxy_dict['disk_scale_length_of_sigR2'],
@@ -227,7 +228,7 @@ def make_galaxy_test(converter, galaxy_dict, script_path):
                                      #bulge_streaming_fraction = galaxy_dict["bulge_streaming_fraction"],
                                      output_directory = '/data1/brentegani/')
 
-    galaxy_data_path = SCRIPT_PATH + '/galaxies/data/testrun/{}_sample_testrun'.format(galaxy_dict['name'])
+    galaxy_data_path = out_dir + '{}_sample_test'.format(galaxy_dict['name'])
 
     widgets = ['Saving {} galaxy data: '.format(galaxy_dict['name']), 
                pbwg.AnimatedMarker(), pbwg.EndMsg()]
@@ -266,9 +267,9 @@ def make_galaxy(converter, galaxy_dict, script_path, test=False):
                                      output_directory = '/data1/brentegani/')
     
     if not test:
-        galaxy_data_path = script_path + '/galaxies/data/{}_full'.format(galaxy_dict['name'])
+        galaxy_data_path = script_path + '/data/{}_full'.format(galaxy_dict['name'])
     if test:
-        galaxy_data_path = script_path + '/galaxies/data/{}_test'.format(galaxy_dict['name'])
+        galaxy_data_path = script_path + '/data/{}_test'.format(galaxy_dict['name'])
     
     widgets = ['Saving {} galaxy data: '.format(galaxy_dict['name']), 
                pbwg.AnimatedMarker(), pbwg.EndMsg()]

@@ -2,7 +2,7 @@ import os
 from data_analysis import __SCRIPT_PATH__
 
 #creates plot folder
-PLOT_FOLDER = __SCRIPT_PATH__ + '/plots/model-analysis/'
+PLOT_FOLDER = __SCRIPT_PATH__ + '/data/test_plots/'
 if not os.path.exists(PLOT_FOLDER):
     os.makedirs(PLOT_FOLDER)
 

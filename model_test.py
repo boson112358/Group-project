@@ -54,7 +54,7 @@ parser.add_argument('--simulation',
                     help='Run galaxy simulation', 
                     action='store_true')
 parser.add_argument('--analysis', 
-                    help='Analyze galaxy model', 
+                    help='Analyse galaxy model', 
                     action='store_true')
 parser.add_argument('--correction', 
                     help='Correct galaxy velocity and mass', 

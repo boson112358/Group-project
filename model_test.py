@@ -150,9 +150,6 @@ if MWAY:
 if ANDROMEDA:
     print('Using Andromeda data', flush=True)
     glxy_param = m31_parameters
-else:
-    print('No galaxy argument given, using Milky Way data', flush=True)
-    glxy_param = mw_parameters
 
 if SIMULATION:
     print('Simuation test run', flush=True)

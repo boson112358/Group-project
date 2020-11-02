@@ -1,119 +1,605 @@
 
-\documentclass[a4paper,12pt]{article} 
+\documentclass[a4paper,12pt, english]{article} 
 
 % Packages:
-\usepackage{geometry}
+
 \usepackage{graphicx,xcolor} 
 \usepackage{subfigure} 
+
 \usepackage{float}
-\usepackage{amsmath, amssymb} 
 \usepackage[exponent-product=\cdot, per-mode=symbol]{siunitx} 
 \usepackage[notrig]{physics} 
-\usepackage{enumitem,fancyhdr,lastpage,parskip} 
-\usepackage[numbers,square,super,sort&compress]{natbib} 
+\usepackage{enumitem,lastpage,parskip} 
 \usepackage[hidelinks]{hyperref}
 \usepackage{listings} 
 \usepackage{cprotect} 
 \allowdisplaybreaks
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{minted}
+\usepackage{comment}
+\usepackage{url}
+\usepackage{fancyhdr}
+\usepackage[width=.75\textwidth]{caption}
+
+%\usepackage{subcaption}
+%\usepackage[pass]{geometry}
+
+%Plot path
+\graphicspath{ {./VelocityDistr/}}
+
+%Bibliography stuff
+\usepackage[
+            backend=biber,
+            citestyle=numeric,
+            bibstyle=authoryear,
+            sorting=none,
+            ]{biblatex}
+\usepackage[nottoc,numbib]{tocbibind}
+\usepackage{emptypage}
+\makeatletter
+\input{numeric.bbx}
+\makeatother
+
+\addbibresource{bibliography.bib}
+\AtEveryBibitem{\clearfield{isbn}}
+\AtEveryBibitem{\clearfield{note}} 
+\AtEveryBibitem{\clearfield{url}}
+\AtEveryBibitem{\clearfield{doi}}
+\AtEveryBibitem{\clearfield{issn}}
+\AtEveryBibitem{\clearfield{month}}
+\AtEveryBibitem{\clearfield{eprint}}
+\DeclareNameAlias{author}{family-given}
 
 % CODE ENVIRONMENT
 \definecolor{mygreen}{rgb}{0,0.6,0} \definecolor{mygray}{rgb}{0.5,0.5,0.5} \definecolor{mymauve}{rgb}{0.58,0,0.82}
 \lstset{basicstyle=\footnotesize, breakatwhitespace=false, breaklines=true, commentstyle=\color{mygreen}, extendedchars=true, frame=single, keepspaces=true, keywordstyle=\color{blue}, language=Python, numbers=left,                    numbersep=5pt, numberstyle=\tiny\color{mygray},  rulecolor=\color{black}, showspaces=false, showstringspaces=false, showtabs=false, stringstyle=\color{mymauve}, tabsize=3, title=\lstname, captionpos=b}
 
 
+%Title, author(s) and date
+\title{The Fate of the Solar System after Milky Way and Andromeda Merger}
+\author{Alberto Brentegani, Davey Plugers, Zhen Xiang}
+\date{1 November 2020}
+
 % SET HEADER/FOOTER
 \pagestyle{fancy}
 \fancyhf{}
-\chead{GROUP-E}
-%\lhead{TITLE}
-\cfoot{\thepage\ of \pageref*{LastPage}}
+\fancyhead[R]{\thepage}  
+\fancyhead[C]{\nouppercase{\leftmark}}  
+\fancyhead[L]{\nouppercase{Group E}}  
+\fancyheadoffset[R,L]{1cm}  
+\renewcommand{\headrulewidth}{0.5pt}  
+
+%defining caption for equation
+\DeclareCaptionType{equ}[][]
+%\captionsetup[equ]{labelformat=empty}
 
 \begin{document}
 
-%titlepage
+%used to restore the default article layout after including the geometry package with the pass argument
+%\restoregeometry
+
 \begin{titlepage}
+\makeatletter
+\begin{center}
 
-\newcommand{\HRule}{\rule{\linewidth}{0.5mm}} 
+\vspace*{-1in}
+\begin{figure}[htb]
+    \centering
+    \includegraphics[width=8cm]{lu_logo.png}
+\end{figure}
 
-\center 
-\begin{figure}[H] \center{\includegraphics[width=0.2\linewidth]{logo}} \end{figure}
-\textsc{\LARGE Universiteit Leiden}\\[1.5cm] 
-\textsc{\Large Simulation and Modeling in Astrophysics}\\[0.5cm]
+\vspace{-25pt}
+\rule{125mm}{0.1mm} \\
+\vspace{5pt}
+\begin{Large}
+    \textsc{Faculty of Science}\\
+\end{Large}
+\vspace{5pt}
+\textit{Course of:}\\
 
-\HRule \\[0.4cm]
-{ \huge \bfseries The fate of the Solar System after Milky Way and Andromeda merger}\\[0.4cm] 
-\HRule \\[1.5cm]
+\begin{Large}
+    \textsc{Simulation and Modeling in Astrophysics}\\
+\end{Large}
+\vspace{30pt}
 
-\begin{minipage}{0.45\textwidth}
-\begin{flushleft} \large
-\emph{Students:}\\
-\small{Alberto Brentegani} \small{(\texttt{s???????})}\\
-\small{Davey Plugers} \small{(\texttt{s???????})} \\
-\small{Zhen Xiang} \small{(\texttt{s2731126})}
-\end{flushleft}
-\end{minipage}
-~
-\begin{minipage}{0.4\textwidth}
-\begin{flushright} \large
-\emph{Lecturer:} \\
-\small{Prof.dr.S.F.(Simon)Portegies Zwart}\\
-\hspace{1cm} \\
-\end{flushright}
-\end{minipage}\\[4cm]
+\begin{LARGE}
+    \textbf{Group E Project Report:} \\
+    \textbf{\@title} \\
+\end{LARGE}
+\vfill
 
-{\large \today\\Leiden}\\[3cm] 
+\begin{normalsize}
+	\begin{flushleft}
+	  \textit{Date:} \hfill \textit{Students:}\\
+	  \vspace{1pt}
+	  \@date \hfill Alberto Brentegani\\
+	  \hfill Davey Plugers\\
+	  \hfill Zhen Xiang\\
+	  \vspace{10pt}
+	\end{flushleft}
+\end{normalsize}
+\vspace{20pt}
 
+\rule{125mm}{0.1mm} \\
+\vspace{5pt}
+\scshape{\large{Academic Year 2020/2021}} \\
+
+\end{center}
+\makeatother
 \end{titlepage}
 
+%new layout for the text (if using geometry package)
+%\newgeometry{
+%    textheight=9in,
+%    textwidth=6.5in,
+%    top=1in,
+%   headheight=14pt,
+%    headsep=25pt,
+%    footskip=30pt
+%  }
 
-\vfill 
 %abstract
 \begin{abstract}
-summarize the introduction,question,method and result
+The future merger between the Milky Way (MW) and Andromeda (M31) galaxy is a matter of great interest within the astrophysical community, given that it involves our host Galaxy, and in the past has been studied in several works, using simulations and observational constraints. In this work we will follow the simulation approach, with the help of the AMUSE framework, adding the Solar System into the MW-M31 system. Our goal is to find out what will be the fate of our own System after the merger event. Several scenarios are possible: it could remain bound to the new-formed galaxy, at a smaller or larger radial position compared to the present one, or it could be ejected into the intergalactic space. Taking into account a wide range of initial conditions (such as the M31 velocity vector, the galactic coordinates of the Solar System and, if enough time is available, the presence of the Intergalactic Medium) and using detailed galaxy models, we aim to find out the probability of these scenarios.\par
 \end{abstract}
 
 \newpage
 
-\vspace{2em}
-\setcounter{tocdepth}{2} 
 \tableofcontents 
 
 \newpage 
 
+\section{Introduction}
+\label{introduction}
+Within the Local Group a macroscopic event is set to take place in the future: given that the Andromeda Galaxy is moving towards the Milky Way, the two galaxies are likely to experience a collision and a subsequent merger event in \(\approx 5\: Gyr\) (see \textcite{Cox_2008}, \textcite{van_der_Marel_2019} and \textcite{Schiavi_2019}). This immediately raises a question: at the end of such an event, what will happen to the Solar System? To get an answer our research will focus on simulating such a collision and merger using the AMUSE software (see \textcite{Portegies_Zwart_McMillan_2018}, \textcite{Portegies_Zwart_2013}, \textcite{Pelupessy_2013} and \textcite{Portegies_Zwart_2009}), with the goal to unravel the fate of the Solar System.\par
+\smallskip
+The original plan of the project was to take into account the effect of the Intergalactic Medium (IGM) on the merger and to follow the dynamical evolution of the two super massive Black Holes (SMBHs) centered in both galaxies. However, simulating the macrostructures of the two galaxies turned out to be more difficult than previously estimated. For this reason we are focusing on the galaxy models, setting aside both IGM and SMBHs.\par 
+\smallskip
 
+\subsection{Our Goals}
+\label{goals}
+During the merger event, we will focus on the motion of the Solar System within the MW-M31 frame. Our goals for this project are: 
+\begin{itemize}
+    \item to determine how the starting conditions of the simulation, as relative velocity and orientation, affect the dynamical evolution of the merger;
+    \item to infer the statistical likelihood of our Solar System to remain bound to the newly formed galaxy after the merger and, if this is the case, to determine its final position.
+\end{itemize}
+\par\smallskip
 
-%introduction
-\section{Introduction} 
+\subsection{Outline of the Report}
+\label{outline}
+In Section \ref{methods} we present the AMUSE framework and the modules we used to set up our simulations, namely \texttt{GalactICs}, \texttt{Gadget2} and \texttt{Fi}. We further describe the implementation of a leapfrog algorithm for the integration of the Solar System position.\par
+\smallskip
+In Section \ref{initial-conditions} we present the initial conditions of our MW and M31 models, as well as the initial relative displacement of the galaxies. Furthermore we describe how we add the Solar System to the MW model. At the end of the Section we show how we analyse our initial models, to determine their accuracy and stability.\par
+\smallskip
+In Section \ref{resutls} we show the results of the preliminary model analysis and the results of the merger simulation.\par
+\smallskip
+In Section \ref{conclusions} we draw out our conclusion on our model and we present a strategy for solving our current issues. At the end we give an outline of how we intend to proceed with the project.\par
+\newpage
 
-\section{Merger model}
-\subsection{Galaxies}
+\section{Methods}
+\label{methods}
+The simulations are run through the implementation of two hydrodynamics modules within the AMUSE framework, \texttt{Gadget2} and \texttt{Fi}. Although they are used for different purposes, both solvers are implemented in our code to evolve the galaxy models, which are generated through the \texttt{GalactICs} module, specifically with the \texttt{new\_galactics\_model} function.\par
+\smallskip
+The Solar System will be indirectly tracked by defining a region around its current position in the galactic plane and monitoring the dynamical evolution of the stars in this region. In order to do so we developed a simple leapfrog algorithm which evolve the position of the stars given the MW gravity potential.\par
+\smallskip
+
+\subsection{AMUSE}
+\label{amuse}
+The entirety of our work, from modelling the galaxies to running the simulations, is done within the Astrophysical Multipurpose Software Environment (AMUSE) framework (see \textcite{Portegies_Zwart_McMillan_2018}, \textcite{Portegies_Zwart_2013}, \textcite{Pelupessy_2013} and \textcite{Portegies_Zwart_2009}). The advantage of this approach is that AMUSE allows us to combine different gravitational and hydrodynamical solvers together with the model generator, thus we are able to operate a wide range of simulations without the need to completely rewrite our code.\par
+\smallskip
+
+\subsection{The GalactICs Module}
+\label{galactics}
+The first module we use is \texttt{GalactICs}, originally developed by \textcite{Kuijken_1995} (further versions are presented in \textcite{Widrow_2005} and \textcite{Widrow_2008}). This module sets up self-consistent, axisymmetric disk-bulge-halo galaxy models, particularly featuring a finite extent, making them suitable for N-body simulation. Moreover the models are generated to fit observational data, such as rotation curves (see Section \ref{model-analysis}), making this module a very suitable choice to reproduce real galaxies, as the MW and M31.\par
+\smallskip
+
+\subsection{The Gadget2 Module}
+\label{gadget2}
+The second module we use is \texttt{Gadget2}, presented in \textcite{Springel_2005} (see also \textcite{Springel_2001} and \textcite{Durier_2012}). This simulation code is a parallel TreeSPH code and computes gravitational forces with a hierarchical tree algorithm. When simulating an isolated system, such as the MW-M31 system, it follows the evolution of a self-gravitating collisionless N-body system, further allowing gas dynamics to be optionally included.\par
+\smallskip
+Owing to the fact that this code is a parallel tree code, we use it to quickly test the galaxy models and the merger. However it is not suited to simulate the MW-M31 system with the addition of the Solar System, due the lack of the implementation of the \texttt{get\_gravity\_at\_point} method. For this reason, when running our final simulation, we use another solver. Nonetheless this code remains an excellent choice to operate the preliminary tests of our models.\par
+\smallskip
+
+\subsection{The Fi Module}
+\label{fi}
+The third module we use is \texttt{Fi} (see \textcite{Hernquist_1989}, \textcite{Gerritsen_1999}, \textcite{Pelupessy_2004} and \textcite{Pelupessy_2005}). It is a parallel TreeSPH code for galaxy simulations, thus suited to evolve the MW-M31 system. Compared to \texttt{Gadget2}, given the same galactic model, it has a larger run time. Despite this time difference, we decided to use \texttt{Fi} for the final merger simulation due to fully implementation of the \texttt{get\_gravity\_at\_point} method, which we use in our self-developed leapfrog algorithm.\par
+\smallskip
+
+\subsection{The Leapfrog Algorithm}
+\label{leapfrog}
+While not an AMUSE module, this algorithm is commonly used in astrophysics and provides much greater accuracy as oppose to direct integration. The algorithm works by adjusting the velocity and position at separate equidistant timesteps. It is a surprisingly simple yet powerful differential equation solver. In the code this is done by calling the \texttt{get\_gravity\_at\_point} method to get the acceleration for each one of the particles. This can then be used to adjust the velocity which determines the next particle position.\par
+\smallskip
+Even though the algorithm is written in a slower programming language (Python), compared to the underlying \texttt{Fi} language (FORTRAN), this can still save time since it disregards the Solar System gravitational contribution as the main solver is handling the MW-M31 system, while keeping a lower complexity, as shown by Equation \ref{complexity}.\par
+\begin{equ}[!ht]
+\begin{equation}
+\begin{gathered}
+    \mathcal{O}(combined) = (N_{gal}+N_{Sol})^2 \propto N_{gal}^2 + N_{gal}N_{Sol} + N_{Sol}^2  \\
+    \mathcal{O}(divided) = N_{gal}^2 +  \mathcal{O}(\texttt{get\_gravity\_at\_point})\textcolor{red}{N_{Sol}} \propto N_{gal}^2 + N_{gal}\textcolor{red}{N_{Sol}}
+\end{gathered}
+\label{complexity}
+\end{equation}
+\caption*{In the second line $N_{Sol}$ is highlighted in red to denote the slower programming language.}
+\end{equ}\par
+\smallskip
+The \texttt{get\_gravity\_at\_point} method can be appled to all the Solar System particle positions to get their acceleration. We can further use a leapfrog integration to solve the second order differential equation defined by:
+\begin{equation}
+    \frac{d^2x}{dt^2} = A(x)
+\end{equation}
+This method is a second order differential equation method for periodic motion. Allowing for good accuracy for very little calculation for the Solar System particles. This is done by calculating $\frac{dx}{dt}$ and x at intermittent timesteps.\par
+\smallskip
+We start by defining a constant timestep and calculating the kick-velocity  $\vec{v}_{\frac{1}{2}}$. Once this has been calculated, the kick-velocity can be used to find a new position. This new position is then used to get the acceleration at that point which then calculates the new velocity. This process then repeats itself for as many timesteps as needed.
+\begin{equation}
+\begin{gathered}
+    A(\vec{r}_i) = \verb+get_gravity_at_point+(\vec{r}_i) \\
+    \vec{v}_{\frac{1}{2}} = \vec{v}_0 + A(\vec{r}_0)\frac{\Delta T}{2}\\
+    \vec{r}_{i+1} = \vec{r}_i + \vec{v}_{i+\frac{1}{2}}\Delta T \\
+    \vec{v}_{i+\frac{1}{2}} = \vec{v}_{i-\frac{1}{2}} + A(\vec{r}_i)\Delta T
+\end{gathered}
+\end{equation}\par
+\smallskip
+This code can then be run alongside the gravity solver to track the evolution of the Solar System throughout the merger.\par
+\newpage
+
+\section{Initial Conditions}
+\label{initial-conditions}
+To achieve our goals we need to consider the Solar System as a member of the MW and our Galaxy as a member of the Local Group. These two galaxies are its two most massive members that, according to recent simulations (see \textcite{Cox_2008}, \textcite{van_der_Marel_2019} and \textcite{Schiavi_2019}) and observational measurements (see \textcite{van_der_Marel_2012b}), are likely to experience a merger event in \(\approx 5\: Gyr\).\par
+\smallskip
+In order to simulate the merger, we consider the MW-M31 system to be isolated, without any influence from the other members of the Local Group (even though \textcite{van_der_Marel_2012b} suggest that the M33 galaxy will play an active role in the merger). Furthermore, we need to carefully model both the MW and M31, set their relative displacement and add the Solar System on top of the Galaxy. In this Section we give an overview of the initial conditions adopted into our merger model.\par
+\smallskip
+
+\subsection{Milky Way and Andromeda Models}
+\label{mw-m31-models}
+The \texttt{new\_galactics\_model} function of the \texttt{GalactICs} module takes several parameters as arguments. To determine these parameters we refer to \textcite{Widrow_2005}, \textcite{Widrow_2008} and the Master thesis from \textcite{Withagen_2019}, where both galaxies are modelled with the same module. In order to get representative models we choose the values taking an additional constraint into account: the rotation curves given by our models need to reproduce the observed rotation curves (see Sections \ref{model-analysis} and \ref{resutls}).\par
+\smallskip
+The main galaxy macroscopic components (bulge, disk and halo) are generated by the code using the parameters in Table \ref{gal-param}. The velocity, density and radius' cut-off of the halo are defined respectively by the \(\sigma_{h}\), \(a_{h}\) and \(\alpha_{h}\) parameters. The \(R_{d}\), \(R_{out}\), \(\delta R_{out}\) and \(h_{d}\) parameters define the geometry of the disk, while \(M_{d}\) defines its mass. The density and cut-off of the bulge are defined by \(a_{b}\) and \(\alpha_{b}\).\par
+
+\begin{table}[]
+\begin{tabular}{l|l|l|l|l}
+Parameter          & Description                       & MW      & M31    & Unit               \\ \hline
+\(\sigma_{h}\)     & Halo characteristic velocity      & 249.6   & 337.1  & km s\(^{-1}\)      \\
+\(a_{h}\)          & Halo scale length                 & 12.96   & 12.94  & kpc                \\
+\(\alpha_{h}\)      & Halo cut-off parameter            & 0.83    & 0.75   & -                  \\
+\(M_{d}\)          & Disk mass                         & 45.8078 & 77.822 & \(10^9 M_{\odot}\) \\
+\(R_{d}\)          & Disk scale length                 & 2.806   & 5.577  & kpc                \\
+\(R_{out}\)        & Disk truncation radius            & 30      & 30     & kpc                \\
+\(\delta R_{out}\) & Sharpness of disk truncation           & 1.0     & 1.0    & -                  \\
+\(h_{d}\)          & Disk scale height                 & 0.409   & 0.3    & kpc                \\
+\(\sigma_{R0}\)    & Radial velocity disperion at GC   & 70      & 80     & km s\(^{-1}\)      \\
+\(R_{\sigma}\)     & Scale length of radial dispersion & 2.806   & 5.577  & kpc                \\
+\(a_{b}\)          & Bulge scale length                & 0.788   & 1.826  & kpc                \\
+\(\alpha_{b}\)     & Bulge cut-off parameter           & 0.787   & 0.929  & -                  \\ \hline 
+\end{tabular}
+\caption{\texttt{GalactICs} parameter for MW and M31 galaxies, see \textcite{Widrow_2005} and \textcite{Withagen_2019}.}
+\label{gal-param}
+\end{table}
+\smallskip
+
+Our code generates the galaxy models taking the following assumptions:
+\begin{itemize}
+    \item The galaxies are axisymmetric with respect to the z-axis. This is a direct consequence of the \texttt{GalactICs} module, since it generates axisymmetric models. Although the majority of galaxies present non-axixymmetric features, such as bars or spiral arms, these could cause instabilities in the N-body simulations.
+    \item The galaxies consist only of three main components: bulge, disk and dark matter halo. This is another pre-requisite for using \texttt{GalactICs}, since it takes arguments only for these macroscopic features. Consequently we are not considering globular clusters and stellar halos.
+    \item The galaxies feature an isotropic velocity distribution.
+    \item The galaxies are modelled only with collisionless particles, not taking into account the gas component of the disks. When we will take the IGM into account we will reconsider this assumption.
+    \item The galaxies do not feature a central SMBH. This feature is present in the original \texttt{GalactICs} code, but it has not been implemented within AMUSE yet. In a second model we plan to lift this assumption and manually add a SMBH to both galaxies.
+\end{itemize}\par
+\smallskip
+
+\subsection{Andromeda Displacement}
+\label{m31-displacement}
+The evolution of the MW-M31 merger is highly sensitive to the magnitude of the transverse velocity of M31. For the value of this velocity vector, no general agreement has been reached, as in the past several values have been proposed (see \textcite{van_der_Marel_2012b}, \textcite{Salomon_2016} and \textcite{van_der_Marel_2019}) in a range that spans from \(\approx 10\: km/s\) to \(\approx 10^2\: km/s\). Given this wide uncertainty our simulations are run taking into consideration several values from the range of possible M31 transverse velocity vectors.\par
+\smallskip
+After setting the galactic parameters of the Milky Way and Andromeda, we need to set up the MW-M31 system. Following the approach of \textcite{van_der_Marel_2008}, we adopt Cartesian coordinates, with the centre of the galaxy as the origin, the x-axis pointing from the Solar System to the Galaxy centre, the y-axis corresponding to the direction of the rotation of the Solar System around the centre of the Galaxy, and the z-axis pointing perpendicularly to the Galaxy plane. For a more detailed derivation of the displacement of the MW-M31 system, refer to \textcite{Withagen_2019}.\par
+\smallskip
+Concerning the rotation of two galaxies, the spin axis of the Milky Way is not parallel to Andromeda, so we need to rotate Andromeda. We can rotate Andromeda using equation:
+\begin{equation}
+    \boldsymbol{r_{M31}} = \boldsymbol{R_{M31}r}
+\end{equation}
+with,
+\begin{equation}
+    \boldsymbol{R_{M31}} = \left(\begin{array}{ccc}
+         0.7703 & 0.3244 & 0.5490 \\
+         -0.6321 & 0.5017 & 0.5905 \\
+         -0.0839 & -0.8019 & 0.5915
+    \end{array}\right)
+\end{equation}
+and $ \boldsymbol{r_{M31}} $ and $ \boldsymbol{r} $ is the rotated and unrotated position and velocity vectors of Andromeda.\par
+\smallskip
+Now we can use position vector $ \boldsymbol P$ to translate Andromeda to the correct coordinates:
+\begin{equation}
+    \boldsymbol{P} \equiv \left(-389.2,+612.7,+283.1\right)
+\end{equation}\par
+\smallskip
+Then we calculate the radial and transverse velocity components to M31. We first find the opposed unit vector of the position vector,
+\begin{equation}
+    \boldsymbol{-\hat{P}} = \frac{\boldsymbol{-P}}{|\boldsymbol{P}|} = \left(+0.4898,-0.7914,+0.3657\right)
+\end{equation}\par
+\smallskip
+To get radial velocity component, we can multiply this vector with the observed radial velocity.
+\begin{equation}
+    \boldsymbol{v_{rad}} = \boldsymbol{-\hat{P}}117 km s^{-1}
+\end{equation}\par
+\smallskip
+To obtain the transverse velocity component one can define an orthogonal vector $ \boldsymbol{A}$, 
+\begin{equation}
+    \boldsymbol{A} \equiv \left(x,y,1\right)
+\end{equation}\par
+\smallskip
+This describes a plane of possible vectors which are all orthogonal to the radial component. However for convenience we choose y=1 to get a single vector out of this plane. The reasoning behind this is that we assume our result is not dependent on the exact orientation of the tangential vector. This vector $\boldsymbol{A} = \left(x,1,1\right)$ is perpendicular to vector $ \boldsymbol{P} $,
+\begin{equation}
+    \boldsymbol{-\hat{P}}\cdot\boldsymbol{A} = 0
+\end{equation}\par
+\smallskip
+This gives us the value of x. Similarly, we can get the unit vector of $\boldsymbol{A}$ 
+\begin{equation}
+    \boldsymbol{\hat{A}} = \left(0.5236,0.6024,0.6024\right)
+\end{equation}\par
+\smallskip
+Now we get the transverse velocity component $ \boldsymbol{v_{trans}} $
+\begin{equation}
+    \boldsymbol{v_{trans}} = 50 km s^{-1} \boldsymbol{\hat{A}}
+\end{equation}\par
+\smallskip
+
 \subsection{Solar System}
+\label{solar-system}
+To simulate the Solar System there are different methods that can be used. One can add a particle to the gravity solver and look where it ends up. However, due to uncertainties and inaccuracies in position and velocity, this single particle approach will not give a good prediction.\par
+\smallskip
+A solution to this can be found by using statistics. By evolving many different particles at suitable locations, it is possible to get a statistical likelihood of certain outcomes for the Solar System. One such possibility is to use the distance between the Sun and the centre of the Galaxy as a fixed parameter and then generate a ring distribution of particles at this radius. Another possibility is to define the exact location of the solar system and then define a small area in which we can distribute particles.\par
+\smallskip
+The advantage of this second method is that it can give a much better prediction given the right initial conditions. On the other hand, the disadvantage of this approach is that its results can be much worse compared to the ring model in the case our starting values are not correct. For the time being we opt to use the position model, however later simulations might switch back to the ring model if we keep struggling to fix our galaxy models.\par
+\smallskip
+While adding these particles in the right position is a great starting point, we still need to make them evolve in time. One option is to just add them to the \texttt{Fi} solver that we are using, however this method has some major disadvantages.\par
+\smallskip
+First, if we want to distribute our mass properly across the galaxy, suddenly adding an enormous amount of stars in a certain point could destroy this balance, making the Galaxy model unstable. However, this can be fixed by setting the value of the Solar System mass to 0, since its mass is already included in the galaxy model. The second problem is more detrimental, if we were to add a huge set of particles in the gravity solver, the final outcome would be effectively a slower code. While it is expected from such a code to run slower the more particles we add, these particles do not need to have an effect on the galaxy, they merely track the evolution of our solar system due to the gravitational potential.\par
+\smallskip
+Thankfully, to avoid these issues, a workaround can be found using the \texttt{get\_gravity\_at\_point} method of the \texttt{Fi} solver. Following this approach we are able to write a very basic gravity solver, described in Section \ref{leapfrog}. During the simulation it is possible to run plotting functions to monitor the properties of the Solar System particles, for instance the distance between the particles and the centre of mass of the MW. This can be done to check if any particle has become unbound due to the gravitational pull of M31.\par
+\smallskip
 
-\section{The simulation}
-\subsection{General Method}
-amuse
-\subsection{Initial conditions}
+\subsection{Model analysis}
+\label{model-analysis}
+When creating the galaxy model it is fundamental to make sure that all the particles have been generated accordingly to our initial conditions. To make sure the position is correct we plot the particle data set to see their spatial distribution on the x-y plane. However to check the velocity components we need to do some preliminary calculations. In our code the velocity of the particles is defined by three different components: $v_x, v_y$ and $v_z$. Our approach to the problem is to convert them into spherical velocity components: $v_{rad}, v_{ang}$ and $v_{tan}$, being respectively the radial, angular and tangential components. For each particle of the models, the radial unit vector is calculated along the distance vector between that particle and the centre of mass of the galaxy, the angular unit vector is defined to be on the x-y plane and the tangential velocity is defined such that it is perpendicular to the other two unit vectors.\par
+\smallskip
+First we redefine the position of each particle into a cartesian coordinate system with the origin in the centre of mass of the galaxy, which is done by taking the position $\vec{r}$ and subtracting the centre of mass position $\vec{r}_{CoM}$.
+\begin{equation}
+    \begin{pmatrix}
+    x'\\y'\\z'
+    \end{pmatrix}
+    = 
+    \begin{pmatrix}
+    x\\y\\z
+    \end{pmatrix}
+    - 
+    \begin{pmatrix}
+    x_{CoM}\\y_{CoM}\\z_{CoM}
+    \end{pmatrix}
+\end{equation}\par
+\smallskip
+Once we have these x', y' and z' coordinates, these can be redefined into the spherical coordinates \(r\), \(\theta\) and \(\phi\):
+\begin{equation}
+\begin{gathered}
+    r = \sqrt{x^{\prime2} + y^{\prime2} + z^{\prime2} }\\
+    \theta = \arctan \left( \frac{\sqrt{x^{\prime2} + y^{\prime2}}}{z'} \right)\\ 
+    \phi = \left\{ \begin{array}{ll}
+             \arctan\left(\frac{y'}{x'}\right)\ \ \ \ \ \ \ \ \ \ \  x' < 0 \\
+            \arctan\left(\frac{y'}{x'}\right) + \pi \ \ \ \ \ \  x' > 0 
+        \end{array} \right.
+\end{gathered}
+\end{equation}\par
+\smallskip
+The different values for $\phi$ are due to the definition of the \(\arctan\) function. When defined like this we have $\theta \in [-\frac{\pi}{2}, \frac{\pi}{2}]$ and $\phi \in [-\frac{\pi}{2}, \frac{3\pi}{2}]$. With these values it is possible to define the local orthogonal vectors for our particle. 
+\begin{equation}
+\begin{gathered}
+\hat{r} = \sin\theta\cos\phi \ \hat{x} + \sin\theta\sin\phi \ \hat{y} + \cos\theta \ \hat{z} \\
+\hat{\theta} = \cos\theta\cos\phi \ \hat{x} + \cos\theta\sin\phi \ \hat{y} - \sin\theta \ \hat{z} \\
+\hat{\phi} = -\sin\phi \ \hat{x} + \cos\phi \ \hat{y}
+\end{gathered}
+\end{equation}\par
+\smallskip
+However we can also get $\hat{r}$ by taking the redefined position vector and dividing it by its magnitude. Since we are going to plot these velocities in function of their distance $|\vec{r}-\vec{r}_{CoM}|$, this will be the preferred method.  
+\begin{equation}
+    \hat{r} = \frac{\vec{r}-\vec{r}_{CoM}}{|\vec{r}-\vec{r}_{CoM}|}
+\end{equation}\par
+\smallskip
+Now we can solve for the three new velocity components by using the velocity of the particle and expressing it in the different orthogonal bases.
+\begin{equation}
+    v_x \ \hat{x} + v_y \ \hat{y} + v_z \ \hat{z} = \vec{v} = v_{rad} \ \hat{r} + v_{ang} \ \hat{\phi} + v_{tan} \ \hat{\theta}
+\end{equation}\par
+\smallskip
+Taking the inner product with $\hat{x}, \hat{y}$ and $\hat{z}$ then gives three linear equations that can be solved to get the values for $v_{rad}, v_{ang}$ and $v_{tan}$.\par
+\smallskip
+It is important to note that if we are considering a galaxy whose particle rotation is not restricted to the x-y plane, we need to redefine the $\hat{\phi}$ which then will also change $\hat{\theta}$. This is because now $\hat{\phi}$ is defined to lie in the rotational plane such that its velocity component $v_{ang}$ is the speed at which it rotates around the galaxy. Then we plot the three spherical velocity components in function of their distance and check if they are correct.\par
+\smallskip
+%To do this one could try and use multiple particles to calculate the best fit for the rotational plane and calculate a rotation which then acts on the unit vectors. Another solution would be to disregard this and redefine the plane for every particle such that it only has the radial and angular velocity however this would make it difficult to do proper data analysis. \\
+Most of these components should average out to zero except for the angular velocity. A relevant aspect of this analysis is the variance of the velocities. Obviously not every particle should move with exactly 0 km/s for the tangential or radial component, however if this variance is too big the galaxy will be unstable and lose its structure.\par
+\smallskip
+At the time of writing this report one of the main problems is that the variance on all the velocity components is too big. To mitigate this problem we introduce a correction factor, even though it is just a temporary solution. Because of this reason it has not been possible to run an accurate simulation of the merger.\par
+\smallskip
+After considering each velocity component individually, we then focus on the magnitude of the total velocity $\vec{v}$. This value in function of the distance from the centre of mass is important since this will give the rotation curve of the galaxies. If we plot this curve for our galaxy models we should get a profile similar to the observed curves, shown in Figures \ref{fig:obs-mw-curve} and \ref{fig:obs-m31-curve}.\par
+%%write about rotation curve, how we compute that and why it is useful. Maybe add a sample plot of m31 rotation curve
+\begin{figure}
+    \centering
+    \includegraphics[width=0.6\linewidth]{Rotation_Curve.jpg}
+    \caption{Observed MW rotation curve, taken from \textcite{Obennet_2017}.}
+    \label{fig:obs-mw-curve}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.8\linewidth]{observed_m31_rot_curve.png}
+    \caption{Observed M31 rotation curve, taken from \textcite{Carignan_2006}.}
+    \label{fig:obs-m31-curve}
+\end{figure}
+
+\smallskip
+These observed values can be compared with our rotation curves, shown in Figures \ref{fig:mw-rot-curve} and \ref{fig:m31-rot-curve}. After having corrected the velocity of the particles by a 0.15 factor, at small radii the simulated and observed curves appear to be very similar in shape. However at larger radii the simulated curves deviate substantially from the expected profiles. This discrepancy shows that our models are not a good approximation of the galaxies.\par
+\clearpage
 
 \section{Results}
-\subsection{Features of merger}
-\subsection{Fate of the Solar System}
+\label{resutls}
+In this Section we show the plots resulting from the galaxy model analysis described in Section \ref{model-analysis} as well as snapshots of our simulation, both of the MW and of the MW-M31 merger. As our models are not stable yet, all the velocities are plotted after multiplying the cartesian components of the velocity by a factor 0.15, in order to obtain values within the same order of magnitude of the observed ones. Furthermore in the simulations, in addition to the velocity correction, the total mass of the galaxies has been multiplied by a 0.001 factor.\par
+\smallskip
+In the panels of Figure \ref{fig:mw-m31-merger-evolution} is shown the instability of the galaxy models. In the panels of Figure \ref{fig:mw-evolution} we observe in more detail the instability of the MW galaxy model over relatively small timescales. Figures \ref{fig:mw-rot-curve} and \ref{fig:m31-rot-curve} show the simulated rotation curves. Figures \ref{fig:bulge-vel}, \ref{fig:disk-vel} and \ref{fig:halo-vel} show the velocity distributions of different Galaxy components.\par
 
-\section{Conclusion}
+\begin{figure}[!ht]
+\centering
+\begin{minipage}{0.45\textwidth}
+  \centering
+\includegraphics[width=1\textwidth]{simulations-plots/mw_m31_cmerger_0000.png}
+\end{minipage}
+\begin{minipage}{0.45\textwidth}
+  \centering
+\includegraphics[width=1\textwidth]{simulations-plots/mw_m31_cmerger_0010.png}
+\end{minipage}
+\begin{minipage}{0.45\textwidth}
+  \centering
+\includegraphics[width=1\textwidth]{simulations-plots/mw_m31_cmerger_0030.png}
+\end{minipage}
+\begin{minipage}{0.45\textwidth}
+  \centering
+\includegraphics[width=1\textwidth]{simulations-plots/mw_m31_cmerger_0080.png}
+\end{minipage}
+\caption{Contour plot of the number density time evolution of the MW-M31 system, result of a simulation run with \texttt{Gadget2} with a timestep of 0.5 Myr. Note that before running the code the mass and the velocity of both galaxies were multiplied respectively by a 0.001 and a 0.15 factor. The x-y plane is assumed to be parallel to the MW galactic plane. From left to right, top to bottom the time of the simulation increases.} 
+\label{fig:mw-m31-merger-evolution}
+\end{figure}
 
 
+\begin{figure}
+\centering
+\begin{minipage}{0.45\textwidth}
+  \centering
+\includegraphics[width=1\textwidth]{simulations-plots/mw_testrun_0000.png}
+\end{minipage}
+\begin{minipage}{0.45\textwidth}
+  \centering
+\includegraphics[width=1\textwidth]{simulations-plots/mw_testrun_0046.png}
+\end{minipage}
+\begin{minipage}{0.45\textwidth}
+  \centering
+\includegraphics[width=1\textwidth]{simulations-plots/mw_testrun_0137.png}
+\end{minipage}
+\begin{minipage}{0.45\textwidth}
+  \centering
+\includegraphics[width=1\textwidth]{simulations-plots/mw_testrun_0409.png}
+\end{minipage}
+\caption{Coordinate time evolution of the MW components, result of a simulation run with \texttt{Gadget2} with a timestep of 0.5 Myr. Note that before running the code the mass and the velocity were multiplied respectively by a 0.001 and a 0.15 factor. The x-y plane is assumed to be parallel to the MW galactic plane. From left to right, top to bottom the time of the simulation increases.} 
+\label{fig:mw-evolution}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.7\linewidth]{VelocityDistr/mw_rotation_curve.png}
+    \caption{Simulated MW rotation curve, note that the velocity has been multiplied by a 0.15 factor.}
+    \label{fig:mw-rot-curve}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.7\linewidth]{VelocityDistr/m31_not_displaced_corr_rotation_curve.png}
+    \caption{Simulated M31 rotation curve, note that the velocity has been multiplied by a 0.15 factor.}
+    \label{fig:m31-rot-curve}
+\end{figure}
+
+%Add some plots showing the variance of the radial and tang velocity/ add a plot for the angular/velocity profile, comment how we may need to change some stuff in the halo to get better resembling velocity profile and how we are looking for the parameter to change the velocity dispersion
+
+\begin{figure}
+\centering
+\begin{minipage}{0.45\textwidth}
+  \centering
+\includegraphics[width=1\textwidth]{VelocityDistr/mw_bulge_angular_velocity.png}
+\end{minipage}
+\begin{minipage}{0.45\textwidth}
+  \centering
+\includegraphics[width=1\textwidth]{VelocityDistr/mw_bulge_radial_velocity.png}
+\end{minipage}
+\begin{minipage}{0.45\textwidth}
+  \centering
+\includegraphics[width=1\textwidth]{VelocityDistr/mw_bulge_tangential_velocity.png}
+\end{minipage}
+\begin{minipage}{0.45\textwidth}
+  \centering
+\includegraphics[width=1\textwidth]{VelocityDistr/mw_bulge_total_velocity.png}
+\end{minipage}
+\caption{Velocity components distribution of MW bulge particles, note that the velocity has been multiplied by a 0.15 factor. From left to right, top to bottom: angular velocity, radial velocity, tangential velocity and total velocity.}
+\label{fig:bulge-vel}
+\end{figure}
+
+\begin{figure}
+\centering
+\begin{minipage}{0.45\textwidth}
+  \centering
+\includegraphics[width=1\textwidth]{VelocityDistr/mw_disk_angular_velocity.png}
+\end{minipage}
+\begin{minipage}{0.45\textwidth}
+  \centering
+\includegraphics[width=1\textwidth]{VelocityDistr/mw_disk_radial_velocity.png}
+\end{minipage}
+\begin{minipage}{0.45\textwidth}
+  \centering
+\includegraphics[width=1\textwidth]{VelocityDistr/mw_disk_tangential_velocity.png}
+\end{minipage}
+\begin{minipage}{0.45\textwidth}
+  \centering
+\includegraphics[width=1\textwidth]{VelocityDistr/mw_disk_total_velocity.png}
+\end{minipage}
+\caption{Velocity components distribution of MW disk particles, note that the velocity has been multiplied by a 0.15 factor. From left to right, top to bottom: angular velocity, radial velocity, tangential velocity and total velocity.}
+\label{fig:disk-vel}
+\end{figure}
+
+\begin{figure}
+\centering
+\begin{minipage}{0.45\textwidth}
+  \centering
+\includegraphics[width=1\textwidth]{VelocityDistr/mw_halo_angular_velocity.png}
+\end{minipage}
+\begin{minipage}{0.45\textwidth}
+  \centering
+\includegraphics[width=1\textwidth]{VelocityDistr/mw_halo_radial_velocity.png}
+\end{minipage}
+\begin{minipage}{0.45\textwidth}
+  \centering
+\includegraphics[width=1\textwidth]{VelocityDistr/mw_halo_tangential_velocity.png}
+\end{minipage}
+\begin{minipage}{0.45\textwidth}
+  \centering
+\includegraphics[width=1\textwidth]{VelocityDistr/mw_halo_total_velocity.png}
+\end{minipage}
+\caption{Velocity components distribution of MW halo particles, note that the velocity has been multiplied by a 0.15 factor. From left to right, top to bottom: angular velocity, radial velocity, tangential velocity and total velocity.}
+\label{fig:halo-vel}
+\end{figure}
+\clearpage
+
+\section{Conclusions}
+\label{conclusions}
+At the time of writing this report, a viable simulation to draw conclusions from has not been produced. The main issue is due to the initial conditions of the galaxy. When using \texttt{GalactICs} with the parameters described in Section \ref{mw-m31-models}, the resulting galaxy is not stable over timescales long enough to effectively simulating the merger, as shown in Figures \ref{fig:mw-m31-merger-evolution} and \ref{fig:mw-evolution}. We believe that the reason is that our models feature larger mass and velocity compared to the expected values. Currently we do not know what is causing this discrepancy and we are currently putting all our efforts into fixing it.\par
+\smallskip
+
+\subsection{Current issues}
+The first problem that we noticed was the wrong timescale for the merger event. During the first simulations the merger event started after \(\approx 500\) Myr, instead of the 5 Gyr proposed by earlier works (\textcite{Cox_2008},\textcite{van_der_Marel_2019} and \textcite{Schiavi_2019}). It turned out that the mass for our galaxies was incorrect with an order of $10^3$, namely \(1.7 \times 10^{15}\: M_{\odot}\) compared to the expected mass of \(\approx 10^{12}\: M_{\odot}\) (see \textcite{Watkins_2019}). For now this is resolved by multiplying the total galaxy mass by a  $10^{-3}$ factor. However this is just a temporary solution, this issue should be properly solved by changing the dimensionality parameter of the halo of the galaxy. Within the \texttt{GalactICs} module the extension of the halo dictates the final mass of the total galaxy. In the plots in Section \ref{resutls} we can see that the halo radius is 6000 kpc, which is obviously too wide. If we eventually manage to shrink the galaxy halo we will be able to solve the mass discrepancy issue.\par
+\smallskip
+The second issue is the starting velocity of the galaxy particles, that gives rise to an extreme instability of the models. After a few Myr into the merger simulation, both galaxies feature a steady expansion of their radii, caused by the motion of their particles, outwards from their centre. After performing an analysis of the models, as presented in Section \ref{model-analysis} and shown in Section \ref{resutls}, we gained some insight on this issue: the velocity of the particles is too large to keep the particles bound to each galaxy. This huge range of particle velocities needs to be reduced to make sure that our galaxy models are stable on timescales comparable to the time span of the merger event (\(\gtrsim\) 5 Myr).\par
+\smallskip
+A first correction was attempted by multiplying the cartesian velocity of each particle with a factor to reduce its magnitude, as previously stated in Section \ref{resutls}. While this approach initially works in reducing the total velocity to the right value $\pm 200\frac{km}{s}$, it does not help to keep the galaxies stable on large timescales. We consequently used smaller factors (down to 0.05) to further reduce the velocity, however this approach only led to the collapse of the galaxies.\par
+\smallskip
+These are our main issues at the moment and as soon as we can solve them, we are ready to run our simulation and get results. Our current hypothesis is that the \texttt{central\_radial\_vel\_dispersion} parameter of the \texttt{GalactICs} module should have an effect on the variance of the velocities, however it is only defined for the disk particles. We are going to further analyse the effect of this parameter on the galaxies, hoping to obtain a meaningful result.\par
+\smallskip
+In the case that this method does not work, \texttt{get\_scale\_velocity} and other scale parameters might have to be changed to see which one has an effect on the variance. Another theory is that our issues rise from a combined effect of wrong total mass and of small value of the halo cut-off radius. Fixing the cut-off radius and consequently the total mass might be enough to solve our velocity dispersion issues.\par
+\smallskip
+The worst case scenario would happen if we are not able to get the \texttt{GalactICs} initialisation working properly. In this case we will write our own code to make a simplified galaxy model. We are fully aware that this is the least preferred option as it will take a long time to properly implement.\par
+
+\subsection{Future developments}
+Our current main priority is to fix the galaxy models, focusing on reproducing the observed rotation curves in order to stabilize both galaxies. After this fundamental step, we will run several merger simulations, aiming to produce meaningful animations and plots of this event between the MW and M31. Our goals are to reproduce typical merger features, such as tidal tails, and to track the dynamical evolution of the Solar System. Once this has been completed it will be possible to test different transverse velocity of M31 to check the dependence of the merger on this parameter. We will keep tracking the Solar System during the process and determine its statistical likelihood to remain bound to the newly formed galaxy after the merger and final position.\par
+\smallskip
+After evolving the model without taking the IGM into account, we will attempt to add a homogeneous IGM, which is initially a constant density cube of 1.5 Mpc on a side composed of both dark matter and gas (see \textcite{Cox_2008}). Then we need to determine the initial conditions of IGM, such as the number of IGM particles, the density of IGM and the internal energy of the gas. In addition to the merger analysis, we will also focus on how the galaxy affects the IGM particles during the merging process.\par
+\smallskip
+If there will be enough time, the last thing we aim to do is adding the a SMBHs to both galaxies and monitor their motion. Similarly, we will try different transverse velocity of M31 to obtain the separation between the two SMBHs as function of time for the different values.\par
 \newpage
-\addcontentsline{toc}{section}{References}
-\begin{thebibliography}{99} 
-
-\end{thebibliography}
-
-
-
-\newpage 
-\section*{Appendix: Major Code} \addcontentsline{toc}{section}{Appendix: Major Code}
-we can show the major code, like galaxy model, solor system in this section.
-
-%\cprotect{\subsection*}{galaxy code: \verb+galaxy.py+}
-%\small{\lstinputlisting{galaxy.py}}
+\setlength\bibitemsep{0.5\baselineskip}
+\printbibliography[heading=bibintoc,title={References}]
 
 \end{document}

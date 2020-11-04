@@ -177,8 +177,18 @@ converter = nbody_system.nbody_to_si(scale_mass_galaxy, scale_radius_galaxy)
 
 if GENERATION:
     glxy, glxy_path = gal.make_galaxy(glxy_param['n_halo'], converter, glxy_param['name'], test=True,
-                            disk_number_of_particles = glxy_param['disk_number_of_particles'],
-                            bulge_number_of_particles = glxy_param['bulge_number_of_particles'])
+                                     #halo parameters
+                                     halo_scale_length = glxy_param['halo_scale_length'],
+                                     #disk parameters
+                                     disk_number_of_particles = glxy_param['disk_number_of_particles'],
+                                     disk_mass = glxy_param['disk_mass'],
+                                     disk_scale_length = glxy_param['disk_scale_length'],
+                                     disk_outer_radius = glxy_param['disk_outer_radius'],
+                                     #disk_scale_height_sech2 = glxy_param['disk_scale_height_sech2'],
+                                     #disk_central_radial_velocity_dispersion = glxy_param['disk_central_radial_velocity_dispersion'],
+                                     #bulge paramaters
+                                     bulge_scale_radius = glxy_param['bulge_scale_radius'],
+                                     bulge_number_of_particles = glxy_param['bulge_number_of_particles'])
 
 else:
     glxy, glxy_path = gal.load_galaxy_data(glxy_param['name'], test=True)

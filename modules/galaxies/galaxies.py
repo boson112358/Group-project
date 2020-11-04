@@ -52,11 +52,8 @@ def load_galaxy_data(glxy_name, test=False, loaded='last'):
     m31_dirnames_list = []
     
     for (dirpath, dirnames, filenames) in os.walk(parent):
-        #print(list(filenames), flush=True)
         dirnames_list.extend(dirnames)
         break
-    
-    #print(os.walk(parent), flush=True)
     
     for dirname in dirnames_list:
         if dirname[0:2] == 'mw':
@@ -82,7 +79,6 @@ def load_galaxy_data(glxy_name, test=False, loaded='last'):
             if loaded == dirname:
                 glxy_dir = dirname
                 break
-    
     
     glxy_data_name = glxy_dir
     glxy_data_dir = parent + glxy_dir + '/'

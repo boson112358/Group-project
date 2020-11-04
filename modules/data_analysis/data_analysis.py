@@ -43,8 +43,11 @@ def position_limit(structure, axes=[0, 1]):
     max_coordinate = 0
     for coordinate in axes:
         _temp = np.amax(structure.position[coordinate].value_in(units.kpc))
+        if _temp == float('Inf'):
+            _temp = 0
         if _temp > max_coordinate:
             max_coordinate = _temp
+    #print(max_coordinate, flush=True)
     return max_coordinate
 
 
@@ -65,6 +68,7 @@ def average_velocity_at_radius(radius, velocity, interval_length=1/25, max_radiu
     
     return intervals, average_vel
 
+
 ###### plot functions ######
     
 def plot_galaxy_structure(structure, glxy_path, filename, title=None, label=None):
@@ -76,6 +80,7 @@ def plot_galaxy_structure(structure, glxy_path, filename, title=None, label=None
     ax.set_aspect('equal')
     
     plot_limit = position_limit(structure) + 10
+    #plot_limit = 100
     
     if title == None:
         title = filename

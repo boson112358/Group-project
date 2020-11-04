@@ -92,8 +92,8 @@ if PLOT:
 
 #progressbar import
 
-import progressbar as pbar
-import progressbar.widgets as pbwg
+#import progressbar as pbar
+#import progressbar.widgets as pbwg
 
 
 #Galaxies starting conditions
@@ -137,7 +137,7 @@ m31_parameters = {'name': 'm31_not_displaced',
                   'disk_scale_length' : 5.577 | units.kpc,
                   'disk_outer_radius' : 30 | units.kpc, 
                   'disk_scale_height_sech2' : 0.3 | units.kpc,
-                  'disk_central_radial_velocity_dispersion': 0.7,
+                  'disk_central_radial_velocity_dispersion': 0.8,
                   #bulge parameters
                   'bulge_scale_radius' : 1.826 | units.kpc,
                   'bulge_number_of_particles' : n_bulge,
@@ -179,10 +179,21 @@ radial_velocity = 117 * np.array([0.4898, -0.7914, 0.3657]) | units.kms
 transverse_velocity = 50 * np.array([0.5236, 0.6024, 0.6024]) | units.kms
 
 
-from galaxies import galaxies as gal
-from stars import solar_system as sol
-from igmedium import IGM_homogenous_Gadget2 as igm
-from data_analysis import data_analysis as da
+import modules.galaxies as gal
+#from stars import solar_system as sol
+#from igmedium import IGM_homogenous_Gadget2 as igm
+#from data_analysis import data_analysis as da
+
+
+#Galaxy initialization
+converter = nbody_system.nbody_to_si(scale_mass_galaxy, scale_radius_galaxy)
+
+glxy, glxy_path = gal.make_galaxy(converter, m31_parameters, test=TEST)
+print(glxy_path, flush=True)
+
+if NOMERGER:
+    print('Quitting after galaxy initialization')
+    quit()
 
 
 #Galaxy initialization

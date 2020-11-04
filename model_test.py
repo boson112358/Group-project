@@ -16,6 +16,7 @@ import sys
 #finds script path
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
 
+"""
 #creates model folder
 glxy_folder = SCRIPT_PATH + '/data/model/'
 if not os.path.exists(glxy_folder):
@@ -35,6 +36,7 @@ if not os.path.exists(csv_folder):
 sim_plot_folder = SCRIPT_PATH + '/data/sim_plots/'
 if not os.path.exists(sim_plot_folder):
     os.makedirs(sim_plot_folder)
+"""
     
 #ignore warnings (AmuseWarning at end of simulation)
 import warnings
@@ -44,6 +46,9 @@ warnings.filterwarnings('ignore')
 import argparse
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--generation', 
+                    help='Generate a new galaxy model', 
+                    action='store_true')
 parser.add_argument('--mway', 
                     help='Using Milky Way data', 
                     action='store_true')
@@ -61,22 +66,22 @@ parser.add_argument('--correction',
                     action='store_true')
 args = parser.parse_args()
 
+GENERATION = args.generation
 MWAY = args.mway
 ANDROMEDA = args.andromeda
 SIMULATION = args.simulation
 ANALYSIS = args.analysis
 CORRECTION = args.correction
 
-#progressbar import
-import progressbar as pbar
-import progressbar.widgets as pbwg
-
-from amuse.lab import *
+from amuse.lab import units, Particles, nbody_system
 from amuse.ext.galactics_model import new_galactics_model
 
 #importing data analysis functions
-import data_analysis as da
-import galaxies as gal
+import modules.data_analysis as da
+import modules.galaxies as gal
+import modules.simulations as sim
+import modules.progressbar as pbar
+import modules.progressbar.widgets as pbwg
 
 
 ###### initial conditions ######
@@ -95,8 +100,8 @@ radial_velocity = 117 * np.array([0.4898, -0.7914, 0.3657]) | units.kms
 transverse_velocity = 50 * np.array([0.5236, 0.6024, 0.6024]) | units.kms
 
 #galaxy parameters
-scale_mass_galaxy = 1.0e12 | units.MSun
-scale_radius_galaxy = 100 | units.kpc
+scale_mass_galaxy = 1e12 | units.MSun
+scale_radius_galaxy = 80 | units.kpc
 n_bulge = 10000
 n_disk = 20000
 n_halo = 40000
@@ -147,9 +152,11 @@ m31_parameters = {'name': 'm31_not_displaced',
 if MWAY:
     print('Using Milky Way data', flush=True)
     glxy_param = mw_parameters
-if ANDROMEDA:
+elif ANDROMEDA:
     print('Using Andromeda data', flush=True)
     glxy_param = m31_parameters
+else:
+    raise ValueError('Choose a galaxy')
 
 if SIMULATION:
     print('Simuation test run', flush=True)
@@ -164,21 +171,17 @@ else:
 
 ###### loading galaxy ######
 
-glxy_name = glxy_param['name'] + '_'
+glxy_name = glxy_param['name']
 
 converter = nbody_system.nbody_to_si(scale_mass_galaxy, scale_radius_galaxy)
 
-glxy_data_path = glxy_folder + '{}sample_test'.format(glxy_name)
+if GENERATION:
+    glxy, glxy_path = gal.make_galaxy(glxy_param['n_halo'], converter, glxy_param['name'], test=True,
+                            disk_number_of_particles = glxy_param['disk_number_of_particles'],
+                            bulge_number_of_particles = glxy_param['bulge_number_of_particles'])
 
-if os.path.exists(glxy_data_path):
-    widgets = ['Found galaxy data, loading: ', pbwg.AnimatedMarker(), pbwg.EndMsg()]
-    with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
-        glxy = read_set_from_file(glxy_data_path, "hdf5")
-#else:
-#    glxy = gal.make_galaxy_test(converter, mw_parameters)
-    
-#print('Correcting particles velocities ...', flush=True)
-#mw[n_disk:n_disk+n_bulge].velocity = mw[n_disk:n_disk+n_bulge].velocity/10000
+else:
+    glxy, glxy_path = gal.load_galaxy_data(glxy_param['name'], test=True)
 
 
 ###### model analysis ######
@@ -191,14 +194,16 @@ if ANALYSIS:
 
     widgets = ['Plotting galaxy structures: ', pbwg.AnimatedMarker(), pbwg.EndMsg()]
     with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
-        for structure, filename in zip([glxy_halo, glxy_disk, glxy_bulge], [glxy_name + 'halo', 
-                                                                            glxy_name + 'disk', 
-                                                                            glxy_name + 'bulge']):
-            da.plot_galaxy_structure(structure, filename)
+        for structure, filename in zip([glxy_halo, glxy_disk, glxy_bulge], [glxy_name + '_halo', 
+                                                                            glxy_name + '_disk', 
+                                                                            glxy_name + '_bulge']):
+            da.plot_galaxy_structure(structure, glxy_path, filename)
+            
+    _, csv_folder = da.create_model_analysis_dirs(glxy_path)
 
-    halo_df_path = csv_folder + glxy_name + 'halo_velocities.csv'
-    disk_df_path = csv_folder + glxy_name + 'disk_velocities.csv'
-    bulge_df_path = csv_folder + glxy_name + 'bulge_velocities.csv'
+    halo_df_path = csv_folder + glxy_name + '_halo_velocities.csv'
+    disk_df_path = csv_folder + glxy_name + '_disk_velocities.csv'
+    bulge_df_path = csv_folder + glxy_name + '_bulge_velocities.csv'
 
     if os.path.exists(halo_df_path) and os.path.exists(disk_df_path) and os.path.exists(bulge_df_path):
         widgets = ['Found galaxy velocities data, loading: ', pbwg.AnimatedMarker(), pbwg.EndMsg()]
@@ -215,9 +220,9 @@ if ANALYSIS:
             bulge_df = pd.DataFrame(bulge_dict)
         widgets = ['Saving logs: ', pbwg.AnimatedMarker(), pbwg.EndMsg()]
         with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
-            halo_df.to_csv('{}{}.{}'.format(csv_folder, glxy_name + 'halo_velocities', 'csv'), index=False)
-            disk_df.to_csv('{}{}.{}'.format(csv_folder, glxy_name + 'disk_velocities', 'csv'), index=False)
-            bulge_df.to_csv('{}{}.{}'.format(csv_folder, glxy_name + 'bulge_velocities', 'csv'), index=False)
+            halo_df.to_csv('{}{}.{}'.format(csv_folder, glxy_name + '_halo_velocities', 'csv'), index=False)
+            disk_df.to_csv('{}{}.{}'.format(csv_folder, glxy_name + '_disk_velocities', 'csv'), index=False)
+            bulge_df.to_csv('{}{}.{}'.format(csv_folder, glxy_name + '_bulge_velocities', 'csv'), index=False)
             
             
 ###### correcting velocities and mass ######
@@ -245,7 +250,7 @@ if CORRECTION:
     glxy.mass = glxy.mass * mass_factor
     final_mass = da.galaxy_total_mass(glxy)
 
-    corr = 'corr_'
+    corr = '_corr'
         
 
 ###### plotting velocity components ######
@@ -256,30 +261,30 @@ if ANALYSIS:
         com_distance = halo_df['com_distance'].values    #deprecated in pandas 0.24.1 which I cannot install on STRW computer
         vel_components = [halo_df['angular_velocity'], halo_df['radial_velocity'], 
                           halo_df['tangential_velocity'], halo_df['total_velocity']]
-        plot_prefix = glxy_name + corr + 'halo_'
+        plot_prefix = glxy_name + corr + '_halo_'
         for component, filename in zip(vel_components, ['angular_velocity', 'radial_velocity', 
                                                         'tangential_velocity', 'total_velocity']):
-            da.plot_velocity_component(com_distance, component, plot_prefix + filename)
+            da.plot_velocity_component(com_distance, component, glxy_path, plot_prefix + filename)
             
     widgets = ['Plotting disk velocities: ', pbwg.AnimatedMarker(), pbwg.EndMsg()]
     with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
         com_distance = disk_df['com_distance'].values    #deprecated in pandas 0.24.1 which I cannot install on STRW computer
         vel_components = [disk_df['angular_velocity'], disk_df['radial_velocity'], 
                           disk_df['tangential_velocity'], disk_df['total_velocity']]
-        plot_prefix = glxy_name + corr + 'disk_'
+        plot_prefix = glxy_name + corr + '_disk_'
         for component, filename in zip(vel_components, ['angular_velocity', 'radial_velocity', 
                                                         'tangential_velocity', 'total_velocity']):
-            da.plot_velocity_component(com_distance, component, plot_prefix + filename)
+            da.plot_velocity_component(com_distance, component, glxy_path, plot_prefix + filename)
 
     widgets = ['Plotting bulge velocities: ', pbwg.AnimatedMarker(), pbwg.EndMsg()]
     with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
         com_distance = bulge_df['com_distance'].values    #deprecated in pandas 0.24.1 which I cannot install on STRW computer
         vel_components = [bulge_df['angular_velocity'], bulge_df['radial_velocity'], 
                           bulge_df['tangential_velocity'], bulge_df['total_velocity']]
-        plot_prefix = glxy_name + corr + 'bulge_'
+        plot_prefix = glxy_name + corr + '_bulge_'
         for component, filename in zip(vel_components, ['angular_velocity', 'radial_velocity', 
                                                         'tangential_velocity', 'total_velocity']):
-            da.plot_velocity_component(com_distance, component, plot_prefix + filename)
+            da.plot_velocity_component(com_distance, component, glxy_path, plot_prefix + filename)
 
     widgets = ['Plotting galaxy rotation curve: ', pbwg.AnimatedMarker(), pbwg.EndMsg()]
     with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
@@ -297,13 +302,14 @@ if ANALYSIS:
                                          disk_df['total_velocity'].values, 
                                          bulge_df['total_velocity'].values), axis=0)
         
-        da.galaxy_rotation_curve([com_distance_full], [total_vel_full], 
-                                 glxy_name + corr +'rotation_curve', labels=['galaxy'])
+        da.galaxy_rotation_curve([com_distance_full], [total_vel_full], glxy_path, 
+                                 glxy_name + corr +'_rotation_curve', labels=['galaxy'])
+        
 
 ###### running simulation ######
 
 if SIMULATION:
-    print('Saving plots in: {}'.format(sim_plot_folder), flush=True)
+    print('Saving plots in: {}'.format(sim.create_single_gal_dir(glxy_path)), flush=True)
     
     t_end_int = int(np.round(t_end.value_in(units.Myr), decimals=0))
     dec_num = 0
@@ -312,4 +318,5 @@ if SIMULATION:
     t_step_int = np.round(t_step.value_in(units.Myr), decimals=dec_num)
     
     print('Simulating mw (t = {} Myr, step = {} Myr) ...'.format(t_end_int, t_step_int), flush=True)
-    gal.simulate_single_galaxy(glxy, converter, n_halo, n_bulge, n_disk, t_end, interval=t_step, plot=True)
+    sim.simulate_single_galaxy(glxy, converter, n_halo, n_bulge, n_disk, t_end, glxy_path, 
+                               interval=t_step, plot=True, plot_freq=1000)

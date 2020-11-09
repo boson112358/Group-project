@@ -181,7 +181,7 @@ converter = nbody_system.nbody_to_si(scale_mass_galaxy, scale_radius_galaxy)
 if GENERATION:
     glxy, glxy_path = gal.make_galaxy(glxy_param['n_halo'], converter, glxy_param['name'], test=True,
                                       #output dir
-                                      output_directory = '/data1/brentegani/'
+                                      output_directory = '/data1/brentegani/',
                                       #halo parameters
                                       halo_scale_length = glxy_param['halo_scale_length'],
                                       #disk parameters

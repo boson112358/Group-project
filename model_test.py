@@ -183,7 +183,7 @@ if GENERATION:
                                      disk_number_of_particles = glxy_param['disk_number_of_particles'],
                                      disk_mass = glxy_param['disk_mass'],
                                      disk_scale_length = glxy_param['disk_scale_length'],
-                                     disk_outer_radius = glxy_param['disk_outer_radius'],
+                                     #disk_outer_radius = glxy_param['disk_outer_radius'],
                                      #disk_scale_height_sech2 = glxy_param['disk_scale_height_sech2'],
                                      #disk_central_radial_velocity_dispersion = glxy_param['disk_central_radial_velocity_dispersion'],
                                      #bulge paramaters

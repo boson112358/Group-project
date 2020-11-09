@@ -103,7 +103,6 @@ def make_galaxy(n_halo, converter, glxy_name, test=False, **kwargs):
         galaxy = new_galactics_model(n_halo,
                                      converter,
                                      do_scale=True,
-                                     output_directory = '/data1/brentegani/',
                                      **kwargs)
         
     out_path, current_model, tf = create_output_dir(glxy_name, test=test)

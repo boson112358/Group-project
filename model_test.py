@@ -90,6 +90,9 @@ import modules.progressbar.widgets as pbwg
 t_end = 1000 | units.Myr
 t_step = 0.1 | units.Myr
 
+#GalacICs output dir
+output_directory = '/data1/brentegani/'
+
 #M31 displacement
 rotation = np.array([[0.7703,  0.3244,  0.5490],
                      [-0.6321, 0.5017,  0.5905],
@@ -177,18 +180,20 @@ converter = nbody_system.nbody_to_si(scale_mass_galaxy, scale_radius_galaxy)
 
 if GENERATION:
     glxy, glxy_path = gal.make_galaxy(glxy_param['n_halo'], converter, glxy_param['name'], test=True,
-                                     #halo parameters
-                                     halo_scale_length = glxy_param['halo_scale_length'],
-                                     #disk parameters
-                                     disk_number_of_particles = glxy_param['disk_number_of_particles'],
-                                     disk_mass = glxy_param['disk_mass'],
-                                     disk_scale_length = glxy_param['disk_scale_length'],
-                                     #disk_outer_radius = glxy_param['disk_outer_radius'],
-                                     #disk_scale_height_sech2 = glxy_param['disk_scale_height_sech2'],
-                                     #disk_central_radial_velocity_dispersion = glxy_param['disk_central_radial_velocity_dispersion'],
-                                     #bulge paramaters
-                                     bulge_scale_radius = glxy_param['bulge_scale_radius'],
-                                     bulge_number_of_particles = glxy_param['bulge_number_of_particles'])
+                                      #output dir
+                                      output_directory = '/data1/brentegani/'
+                                      #halo parameters
+                                      halo_scale_length = glxy_param['halo_scale_length'],
+                                      #disk parameters
+                                      disk_number_of_particles = glxy_param['disk_number_of_particles'],
+                                      disk_mass = glxy_param['disk_mass'],
+                                      disk_scale_length = glxy_param['disk_scale_length'],
+                                      #disk_outer_radius = glxy_param['disk_outer_radius'],
+                                      #disk_scale_height_sech2 = glxy_param['disk_scale_height_sech2'],
+                                      #disk_central_radial_velocity_dispersion=glxy_param['disk_central_radial_velocity_dispersion'],
+                                      #bulge paramaters
+                                      bulge_scale_radius = glxy_param['bulge_scale_radius'],
+                                      bulge_number_of_particles = glxy_param['bulge_number_of_particles'])
 
 else:
     glxy, glxy_path = gal.load_galaxy_data(glxy_param['name'], test=True)

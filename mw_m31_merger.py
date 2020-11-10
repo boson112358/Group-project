@@ -214,7 +214,6 @@ if NOMERGER:
     print('Quitting after galaxy initialization')
     quit()
 
-
 if CORRECTION:
     print('Correcting velocities and mass: ...', flush=True)
     vel_factor = 1/6.5

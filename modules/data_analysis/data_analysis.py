@@ -1,5 +1,6 @@
 #import os
 from modules import *
+from modules.common import galaxy_structures
 
 #creates plot folder
 #PLOT_FOLDER = __SCRIPT_PATH__ + '/data/test_plots/'
@@ -31,13 +32,13 @@ def galaxy_total_mass(galaxy):
     print('Galaxy total mass: ' + str(np.sum(galaxy.mass).in_(units.MSun)))   #Check total mass, should be around 1.5e12 MSun
     return(np.sum(galaxy.mass).in_(units.MSun))
 
-
+"""
 def galaxy_structures(galaxy, n_disk, n_bulge, n_halo=None):
     halo = galaxy[n_disk+n_bulge:]
     disk = galaxy[:n_disk]
     bulge = galaxy[n_disk:n_disk+n_bulge]
     return halo, disk, bulge
-
+"""
 
 def position_limit(structure, axes=[0, 1]):
     max_coordinate = 0

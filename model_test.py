@@ -183,16 +183,16 @@ if GENERATION:
                                       #output dir
                                       output_directory = '/data1/brentegani/',
                                       #halo parameters
-                                      halo_scale_length = glxy_param['halo_scale_length'],
+                                      #halo_scale_length = glxy_param['halo_scale_length'],
                                       #disk parameters
                                       disk_number_of_particles = glxy_param['disk_number_of_particles'],
                                       disk_mass = glxy_param['disk_mass'],
-                                      disk_scale_length = glxy_param['disk_scale_length'],
+                                      #disk_scale_length = glxy_param['disk_scale_length'],
                                       #disk_outer_radius = glxy_param['disk_outer_radius'],
                                       #disk_scale_height_sech2 = glxy_param['disk_scale_height_sech2'],
                                       #disk_central_radial_velocity_dispersion=glxy_param['disk_central_radial_velocity_dispersion'],
                                       #bulge paramaters
-                                      bulge_scale_radius = glxy_param['bulge_scale_radius'],
+                                      #bulge_scale_radius = glxy_param['bulge_scale_radius'],
                                       bulge_number_of_particles = glxy_param['bulge_number_of_particles'])
 
 else:

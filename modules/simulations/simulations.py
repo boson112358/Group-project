@@ -1,19 +1,53 @@
-from modules.common import __MERGER_DIR__, __PLOT_MERGER_DIR__, __CONTOUR_MERGER_DIR__, __ZOOM_MERGER_DIR__
+###### importing modules ######
+
+from modules.common import __MERGER_DIR__, galaxy_structures
 from modules.progressbar import progressbar as pbar
 from modules.progressbar import widgets as pbwg
 
+import datetime
 import sys
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-import random
+#import random
 from matplotlib.colors import LogNorm
 
 #from amuse.lab import units, Particles
 #from amuse.community import Fi, Gadget2
-from amuse.lab import *
+from amuse.lab import units, Particles, Fi, Gadget2, BHTree
 from amuse.couple import bridge
 
+
+###### create merger output dir ######
+
+def create_merger_output_dir():
+    parent = __MERGER_DIR__
+    
+    increasing = 1
+    
+    while True:
+        current_merger = 'merger_' + str(datetime.date.today()) + '-' + str(increasing).zfill(4)
+        out_dir = parent + current_merger + '/'
+        if not os.path.exists(out_dir):
+            os.makedirs(out_dir)
+            break
+        else:
+            increasing += 1
+            
+    return out_dir, current_merger
+
+def create_merger_subdirs(current_out_dir):
+    diskbulge_merger_dir = current_out_dir + '/merger_plots/'
+    contour_merger_dir = current_out_dir + '/merger_contour/'
+    zoom_merger_dir = current_out_dir + '/merger_zoom/'
+    
+    dirs = [diskbulge_merger_dir, contour_merger_dir, zoom_merger_dir]
+    
+    for direct in dirs:
+        if not os.path.exists(direct):
+            os.makedirs(direct)
+            
+    return diskbulge_merger_dir, contour_merger_dir, zoom_merger_dir
 
 ###### create single galaxy plot output ######
 
@@ -27,7 +61,7 @@ def create_single_gal_dir(glxy_path):
 
 ###### plot functions ######
 
-def plot_merger(mw_halo, mw_disk, mw_bulge, m31_halo, m31_disk, m31_bulge, title, filename):
+def plot_diskbulge_merger(mw_halo, mw_disk, mw_bulge, m31_halo, m31_disk, m31_bulge, title, savepath, filename):
     x_label = "X [kpc]"
     y_label = "Y [kpc]"
     
@@ -59,12 +93,10 @@ def plot_merger(mw_halo, mw_disk, mw_bulge, m31_halo, m31_disk, m31_bulge, title
     
     plt.legend(loc='upper right')
     
-    savepath = __SCRIPT_PATH__ + '/data/merger_plots/'
-    
     plt.savefig(savepath + filename)
     
     
-def plot_zoomed_merger(mw_halo, mw_disk, m31_halo, m31_disk, title, script_path, filename):
+def plot_zoomed_merger(mw_bulge, mw_disk, m31_bulge, m31_disk, title, savepath, filename):
     x_label = "X [kpc]"
     y_label = "Y [kpc]"
     
@@ -79,25 +111,23 @@ def plot_zoomed_merger(mw_halo, mw_disk, m31_halo, m31_disk, title, script_path,
     plt.ylim(-100, 100)
 
     #plotting mw_halo and mw_disk
-    #ax.scatter(mw_halo.x.value_in(units.kpc), mw_halo.y.value_in(units.kpc),
-               #c='tab:blue', alpha=0.6, s=1, lw=0)
+    ax.scatter(mw_bulge.x.value_in(units.kpc), mw_bulge.y.value_in(units.kpc),
+               c='tab:blue', alpha=0.6, s=1, lw=0)
     ax.scatter(mw_disk.x.value_in(units.kpc), mw_disk.y.value_in(units.kpc),
                c='tab:blue', alpha=1, s=1, lw=0, label='mw')
     
     #plotting m31_halo and m31_disk
-    #ax.scatter(m31_halo.x.value_in(units.kpc), m31_halo.y.value_in(units.kpc),
-               #c='tab:orange', alpha=0.6, s=1, lw=0)
+    ax.scatter(m31_bulge.x.value_in(units.kpc), m31_bulge.y.value_in(units.kpc),
+               c='tab:orange', alpha=0.6, s=1, lw=0)
     ax.scatter(m31_disk.x.value_in(units.kpc), m31_disk.y.value_in(units.kpc),
                c='tab:orange', alpha=1, s=1, lw=0, label='m31')
     
     plt.legend(loc='upper_right')
     
-    savepath = script_path + '/plots/zoomed-merger-plots/'
-    
     plt.savefig(savepath + filename)
     
     
-def contour_merger(galaxy1, galaxy2, title, filename):
+def plot_contour_merger(galaxy1, galaxy2, title, savepath, filename):
     _x1, _x2 = np.array(galaxy1.x.value_in(units.kpc)), np.array(galaxy2.x.value_in(units.kpc))
     x = np.concatenate((_x1, _x2))
     y = np.concatenate((galaxy1.y.value_in(units.kpc), galaxy2.y.value_in(units.kpc)))
@@ -121,8 +151,6 @@ def contour_merger(galaxy1, galaxy2, title, filename):
     cbar = plt.colorbar(cont)
     cbar.set_label('Density')
     plt.tight_layout()
-    
-    savepath = __SCRIPT_PATH__ + '/data/merger_contour/'
     
     plt.savefig(savepath + filename)
     
@@ -203,6 +231,36 @@ def plot_single_galaxy(halo, disk, bulge, title, glxy_path, filename):
     plt.savefig(out_plot + filename)
     
     
+###### plot wrapper ######
+
+def plot_wrapper(galaxy1, galaxy2, n_disk, n_bulge, plot_number, last_plot_time, common_title, 
+                 diskbulge_merger_dir, contour_merger_dir, zoom_merger_dir, filename_prefix,
+                 diskbulge=True, contour=True, zoom=True):
+    
+    halo1, disk1, bulge1 = galaxy_structures(galaxy1, n_disk, n_bulge)
+    halo2, disk2, bulge2 = galaxy_structures(galaxy2, n_disk, n_bulge)
+    
+    full_title = common_title + '\nt = {} Myr'.format(int(np.round(last_plot_time.value_in(units.Myr), decimals=0))) 
+    
+    if diskbulge:
+        plot_diskbulge_merger(halo1, disk1, bulge1, halo2, disk2, bulge2,
+                              full_title,
+                              diskbulge_merger_dir,
+                              filename_prefix + '_diskbulge_merger_' + str(plot_number).zfill(4))
+    
+    if contour:
+        plot_contour_merger(galaxy1, galaxy2, 
+                            full_title,
+                            contour_merger_dir,
+                            filename_prefix + '_contour_merger_' + str(plot_number).zfill(4))
+        
+    if zoom:
+        plot_zoomed_merger(halo1, disk1, halo2, disk2, 
+                           full_title,
+                           zoom_merger_dir, 
+                           filename_prefix + '_zoomed_merger_' + str(plot_number).zfill(4))
+    
+    
 ###### plot condition function ######
 
 def check_last_plot_time(current_time, last_plot_time, plot_interval, unit=units.Myr):
@@ -214,10 +272,16 @@ def check_last_plot_time(current_time, last_plot_time, plot_interval, unit=units
     
 ###### merger function ######
     
-def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, script_path, interval=0.1|units.Myr, plot=False):
-    converter = nbody_system.nbody_to_si(1.0e12|units.MSun, 100|units.kpc)
+def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter, 
+                    solver=Gadget2, interval=0.5|units.Myr, plot=False, plot_freq=100):
     
-    dynamics_code = Gadget2(converter, number_of_workers=4)
+    #sets up the gravity solver
+    #if isinstance(solver, Gadget2):
+    #    nw = 4
+    #elif isinstance(solver, Fi):
+    #    nw = 1
+    
+    dynamics_code = solver(converter, number_of_workers=4)
     dynamics_code.parameters.epsilon_squared = (100 | units.parsec)**2
     
     if isinstance(dynamics_code, Gadget2) or isinstance(dynamics_code, Fi):
@@ -229,33 +293,31 @@ def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, script_pat
         set1 = dynamics_code.particles.add_particles(galaxy1)
         set2 = dynamics_code.particles.add_particles(galaxy2)
     
+    #moves system to center of mass and creates channels
     dynamics_code.particles.move_to_center()
-    
-    if isinstance(dynamics_code, Fi):
-        dynamics_code.update_particle_set()
+    mw_channel = dynamics_code.particles.new_channel_to(set1)
+    m31_channel = dynamics_code.particles.new_channel_to(set2)
         
-    dynamics_code.timestep = interval
+    if isinstance(dynamics_code, Gadget2):
+        dynamics_code.timestep = interval
+    elif isinstance(dynamics_code, Fi):
+        dynamics_code.parameters.timestep = interval
+        dynamics_code.update_particle_set()
     
-    halo1 = set1[n_disk+n_bulge:]
-    bulge1 = set1[n_disk:n_disk+n_bulge]
-    disk1 = set1[:n_disk]
-    
-    halo2 = set2[n_disk+n_bulge:]
-    bulge2 = set2[n_disk:n_disk+n_bulge]
-    disk2 = set2[:n_disk]
+    #creates output dirs
+    out_dir, current_merger = create_merger_output_dir()
+    diskbulge_merger_dir, contour_merger_dir, zoom_merger_dir = create_merger_subdirs(out_dir)
     
     if plot == True:
+        #halo1, disk1, bulge1 = galaxy_structures(set1)
+        #halo2, disk2, bulge2 = galaxy_structures(set2)
         plot_number = 0
         last_plot_time = 0 | units.Myr
-        contour_merger(set1, set2, 
-                "MW M31 merger\nt = 0 Myr", 'mw_m31_cmerger_' + str(plot_number).zfill(4))
-        plot_merger(halo1, disk1, bulge1, halo2, disk2, bulge2,
-                    "MW M31 merger\nt = 0 Myr", 'mw_m31_merger_' + str(plot_number).zfill(4))
-        #plot_zoomed_merger(halo1, disk1, halo2, disk2, 
-        #                   "MW M31 merger\nt = 0 Myr", script_path, 'mw_m31_merger_' + str(plot_number).zfill(4))
+        plot_wrapper(set1, set2, n_disk, n_bulge, plot_number, last_plot_time, 'MW M31 merger', 
+                     diskbulge_merger_dir, contour_merger_dir, zoom_merger_dir, 'mw_m31')
     
     current_iter = 0
-    t_end_in_Myr = t_end.as_quantity_in(units.Gyr)
+    t_end_in_Myr = t_end.as_quantity_in(units.Myr)
     total_iter = int(t_end_in_Myr/interval) + 1
     
     widgets = ['Step ', pbwg.SimpleProgress(), ' ',
@@ -270,23 +332,35 @@ def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, script_pat
         dynamics_code.evolve_model(dynamics_code.model_time + interval)
         if isinstance(dynamics_code, Fi):
             dynamics_code.update_particle_set()
+            
+        mw_channel.copy()
+        m31_channel.copy()
         
         if plot == True:
-            if check_last_plot_time(dynamics_code.model_time, last_plot_time, t_end/100):
+            if check_last_plot_time(dynamics_code.model_time, last_plot_time, t_end/plot_freq):
+                #halo1, disk1, bulge1 = galaxy_structures(set1)
+                #halo2, disk2, bulge2 = galaxy_structures(set2)
                 plot_number += 1
                 last_plot_time = dynamics_code.model_time
+                plot_wrapper(set1, set2, n_disk, n_bulge, plot_number, last_plot_time, 'MW M31 merger', 
+                             diskbulge_merger_dir, contour_merger_dir, zoom_merger_dir, 'mw_m31')
+                """
                 contour_merger(set1, set2, 
                                "MW M31 merger\nt = {} Myr".format(int(np.round(dynamics_code.model_time.value_in(units.Myr), 
                                                                                decimals=0))),
+                               contour_merger_dir,
                                'mw_m31_cmerger_' + str(plot_number).zfill(4))
                 plot_merger(halo1, disk1, bulge1, halo2, disk2, bulge2,
                             "MW M31 merger\nt = {} Myr".format(int(np.round(dynamics_code.model_time.value_in(units.Myr), 
                                                                             decimals=0))),
+                            plot_merger_dir,
                             'mw_m31_merger_' + str(plot_number).zfill(4))
-                #plot_zoomed_merger(halo1, disk1, halo2, disk2, 
-                #                   "MW M31 merger\nt = {} Myr".format(int(np.round(dynamics_code.model_time.value_in(units.Myr), 
-                #                                                                   decimals=0))),
-                #                   script_path, 'mw_m31_merger_' + str(plot_number).zfill(4))
+                plot_zoomed_merger(halo1, disk1, halo2, disk2, 
+                                   "MW M31 merger\nt = {} Myr".format(int(np.round(dynamics_code.model_time.value_in(units.Myr), 
+                                                                                   decimals=0))),
+                                   zoom_merger_dir, 
+                                   'mw_m31_merger_' + str(plot_number).zfill(4))
+               """
         
         progress.update(current_iter)
         
@@ -294,15 +368,8 @@ def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, script_pat
     
     if plot == True:
         plot_number += 1
-        contour_merger(set1, set2,
-                       "MW M31 merger\nt = {} Myr".format(int(np.round(t_end.value_in(units.Myr), decimals=0))),
-                       'mw_m31_cmerger_' + str(plot_number).zfill(4))
-        plot_merger(halo1, disk1, bulge1, halo2, disk2, bulge2,
-                    "MW M31 merger\nt = {} Myr".format(int(np.round(t_end.value_in(units.Myr), decimals=0))),
-                    'mw_m31_merger_' + str(plot_number).zfill(4))
-        #plot_zoomed_merger(halo1, disk1, halo2, disk2,
-        #                   "MW M31 merger\nt = {} Myr".format(int(np.round(t_end.value_in(units.Myr), decimals=0))),
-        #                   script_path, 'mw_m31_merger_' + str(plot_number).zfill(4))
+        plot_wrapper(set1, set2, n_disk, n_bulge, plot_number, t_end, 'MW M31 merger', 
+                     diskbulge_merger_dir, contour_merger_dir, zoom_merger_dir, 'mw_m31')
         
     dynamics_code.stop()
     
@@ -412,7 +479,12 @@ def merger_and_igm(galaxy1, galaxy2, converter, sph_code, n_halo, t_end, script_
 def simulate_single_galaxy(galaxy1, converter, n_halo, n_bulge, n_disk, t_end, glxy_path,
                            solver=Gadget2, interval=0.5|units.Myr, plot=False, plot_freq=100):
     
-    dynamics_code = solver(converter, number_of_workers=4)
+    if isinstance(solver, Gadget2):
+        nw = 4
+    elif isinstance(solver, Fi):
+        nw = 1
+        
+    dynamics_code = solver(converter, number_of_workers=nw)
     #dynamics_code = Fi(converter, redirection='none', number_of_workers=1)
     dynamics_code.parameters.epsilon_squared = (100 | units.parsec)**2
     
@@ -426,8 +498,7 @@ def simulate_single_galaxy(galaxy1, converter, n_halo, n_bulge, n_disk, t_end, g
     
     if isinstance(dynamics_code, Gadget2):
         dynamics_code.timestep = interval
-    
-    if isinstance(dynamics_code, Fi):
+    elif isinstance(dynamics_code, Fi):
         dynamics_code.parameters.timestep = interval
         dynamics_code.update_particle_set()
     

@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# coding: utf-8
+###### importing modules ######
 
 import os
 import matplotlib as mpl
@@ -7,14 +6,17 @@ if os.environ.get('DISPLAY','') == '' and os.name != 'nt':
     print('No display found. Using non-interactive Agg backend for matplotlib')
     mpl.use('Agg')
 
-
 import numpy as np
-import matplotlib.pyplot as plt
-import random
-import math
-
-import inspect
 import sys
+
+import modules.galaxies as gal
+import modules.simulations as sim
+
+from amuse.lab import units, Particles, nbody_system
+
+"""
+import inspect
+
 
 #finds script path
 filename = inspect.getframeinfo(inspect.currentframe()).filename
@@ -38,12 +40,11 @@ if not os.path.exists(gal_folder):
 
 
 from amuse.lab import *
-from amuse.ext.galactics_model import new_galactics_model
-from amuse.couple import bridge
-
+#from amuse.ext.galactics_model import new_galactics_model
+#from amuse.couple import bridge
+"""
 
 #ignore warnings (AmuseWarning at end of simulation)
-
 import warnings
 
 warnings.filterwarnings('ignore')
@@ -53,6 +54,9 @@ warnings.filterwarnings('ignore')
 import argparse
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--generation', 
+                    help='Generate a new galaxy model', 
+                    action='store_true')
 parser.add_argument('--plot', 
                     help='Allow output plots', 
                     action='store_true')
@@ -78,6 +82,7 @@ parser.add_argument('-f',
                     help='Foo value, defined for jupyter notebook compatibility')
 args = parser.parse_args()
 
+GENERATION = args.generation
 PLOT = args.plot
 SOLAR = args.solar
 DISK = args.disk
@@ -89,13 +94,9 @@ CORRECTION = args.correction
 if PLOT:
     print('Plots turned on', flush=True)
 
-
-#progressbar import
-
-#import progressbar as pbar
-#import progressbar.widgets as pbwg
-
-
+    
+###### starting conditions ######
+    
 #Galaxies starting conditions
 if not TEST:
     n_bulge = 20000
@@ -137,7 +138,7 @@ m31_parameters = {'name': 'm31_not_displaced',
                   'disk_scale_length' : 5.577 | units.kpc,
                   'disk_outer_radius' : 30 | units.kpc, 
                   'disk_scale_height_sech2' : 0.3 | units.kpc,
-                  'disk_central_radial_velocity_dispersion': 0.8,
+                  'disk_central_radial_velocity_dispersion': 0.7,
                   #bulge parameters
                   'bulge_scale_radius' : 1.826 | units.kpc,
                   'bulge_number_of_particles' : n_bulge,
@@ -148,9 +149,9 @@ m31_parameters = {'name': 'm31_not_displaced',
                   'disk_scale_length_of_sigR2': 5.577 | units.kpc}
 
 #simulation parameters
-scale_mass_galaxy = 1.0e12 | units.MSun
-scale_radius_galaxy = 100 | units.kpc
-t_end = 400 | units.Myr
+scale_mass_galaxy = 1e12 | units.MSun
+scale_radius_galaxy = 80 | units.kpc
+t_end = 8500 | units.Myr
 
 #Solar system starting conditions
 n_stars = 10                                       #How many particles we will add
@@ -168,7 +169,6 @@ L = 10 | units.kpc
 rho = 1000 | units.MSun / (units.kpc)**3
 u = 1.6e+15 | (units.m)**2 / (units.s)**2
 
-
 #M31 displacement
 rotation = np.array([[0.7703,  0.3244,  0.5490],
                      [-0.6321, 0.5017,  0.5905],
@@ -179,26 +179,19 @@ radial_velocity = 117 * np.array([0.4898, -0.7914, 0.3657]) | units.kms
 transverse_velocity = 50 * np.array([0.5236, 0.6024, 0.6024]) | units.kms
 
 
-import modules.galaxies as gal
-#from stars import solar_system as sol
-#from igmedium import IGM_homogenous_Gadget2 as igm
-#from data_analysis import data_analysis as da
+###### galaxy initialization ######
 
-
-#Galaxy initialization
 converter = nbody_system.nbody_to_si(scale_mass_galaxy, scale_radius_galaxy)
 
-glxy, glxy_path = gal.make_galaxy(converter, m31_parameters, test=TEST)
-print(glxy_path, flush=True)
+if GENERATION:
+    print('Generating new galaxies', flush=True)
+    mw, _ = gal.make_galaxy(converter, mw_parameters, test=TEST)
+    m31_not_displaced, _ = gal.make_galaxy(converter, m31_parameters, test=TEST)
+else:
+    mw, _ = gal.load_galaxy_data('mw', test=TEST)
+    m31_not_displaced, _ = gal.load_galaxy_data('m31_not_displaced', test=TEST)
 
-if NOMERGER:
-    print('Quitting after galaxy initialization')
-    quit()
-
-
-#Galaxy initialization
-converter = nbody_system.nbody_to_si(scale_mass_galaxy, scale_radius_galaxy)
-
+"""
 if not TEST:
     mw_data_path = SCRIPT_PATH + '/data/{}_full'.format(mw_parameters['name'])
     m31_not_displaced_data_path = SCRIPT_PATH + '/data/{}_full'.format(m31_parameters['name'])
@@ -215,7 +208,7 @@ if os.path.exists(mw_data_path) and os.path.exists(m31_not_displaced_data_path):
 else:
     mw = gal.make_galaxy(converter, mw_parameters, SCRIPT_PATH, test=TEST)
     m31_not_displaced = gal.make_galaxy(converter, m31_parameters, SCRIPT_PATH, test=TEST)
-
+"""
 
 if NOMERGER:
     print('Quitting after galaxy initialization')
@@ -238,7 +231,8 @@ if all(value == False for value in [SOLAR, DISK, IGM]):
     m31 = gal.displace_galaxy(m31_not_displaced, rotation, traslation, radial_velocity, transverse_velocity)
     print('Simulating merger with no additional components (t = {} Myr) ...'.format(int(np.round(t_end.value_in(units.Myr), 
                                                                                                  decimals=0))), flush=True)
-    gal.simulate_merger(mw, m31, n_halo, n_disk, n_bulge, t_end, SCRIPT_PATH, interval=1|units.Myr, plot=PLOT)
+    sim.simulate_merger(mw, m31, n_halo, n_disk, n_bulge, t_end, converter, 
+                        interval=0.5|units.Myr, plot=PLOT, plot_freq=1000)
     
 if DISK:
     print('Simulating merger with disk test particles ...', flush=True)

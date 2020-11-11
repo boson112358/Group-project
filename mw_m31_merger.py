@@ -191,37 +191,37 @@ converter = nbody_system.nbody_to_si(scale_mass_galaxy, scale_radius_galaxy)
 
 if GENERATION:
     print('Generating new galaxies', flush=True)
-    mw, _ = gal.make_galaxy(mw_param['n_halo'], converter, mw_param['name'], test=TEST,
+    mw, _ = gal.make_galaxy(mw_parameters['n_halo'], converter, mw_parameters['name'], test=TEST,
                             #output dir
                             output_directory = '/data1/brentegani/',
                             #halo parameters
                             #halo_scale_length = glxy_param['halo_scale_length'],
                             #disk parameters
-                            disk_number_of_particles = mw_param['disk_number_of_particles'],
-                            disk_mass = mw_param['disk_mass'],
+                            disk_number_of_particles = mw_parameters['disk_number_of_particles'],
+                            disk_mass = mw_parametsrs['disk_mass'],
                             #disk_scale_length = glxy_param['disk_scale_length'],
                             #disk_outer_radius = glxy_param['disk_outer_radius'],
                             #disk_scale_height_sech2 = glxy_param['disk_scale_height_sech2'],
                             #disk_central_radial_velocity_dispersion=glxy_param['disk_central_radial_velocity_dispersion'],
                             #bulge paramaters
                             #bulge_scale_radius = glxy_param['bulge_scale_radius'],
-                            bulge_number_of_particles = mw_param['bulge_number_of_particles'])
+                            bulge_number_of_particles = mw_parameters['bulge_number_of_particles'])
     
-    m31_not_displaced, _ = gal.make_galaxy(m31_param['n_halo'], converter, m31_param['name'], test=TEST,
+    m31_not_displaced, _ = gal.make_galaxy(m31_parameters['n_halo'], converter, m31_parameters['name'], test=TEST,
                                            #output dir
                                            output_directory = '/data1/brentegani/',
                                            #halo parameters
                                            #halo_scale_length = glxy_param['halo_scale_length'],
                                            #disk parameters
-                                           disk_number_of_particles = m31_param['disk_number_of_particles'],
-                                           disk_mass = m31_param['disk_mass'],
+                                           disk_number_of_particles = m31_parameters['disk_number_of_particles'],
+                                           disk_mass = m31_parameters['disk_mass'],
                                            #disk_scale_length = glxy_param['disk_scale_length'],
                                            #disk_outer_radius = glxy_param['disk_outer_radius'],
                                            #disk_scale_height_sech2 = glxy_param['disk_scale_height_sech2'],
                                            #disk_central_radial_velocity_dispersion=m31_param['disk_central_radial_velocity_dispersion'],
                                            #bulge paramaters
                                            #bulge_scale_radius = glxy_param['bulge_scale_radius'],
-                                           bulge_number_of_particles = m31_param['bulge_number_of_particles'])
+                                           bulge_number_of_particles = m31_parameters['bulge_number_of_particles'])
 else:
     mw, _ = gal.load_galaxy_data('mw', test=TEST)
     m31_not_displaced, _ = gal.load_galaxy_data('m31_not_displaced', test=TEST)

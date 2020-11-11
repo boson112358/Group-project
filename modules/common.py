@@ -8,6 +8,7 @@ from modules import __SCRIPT_PATH__
 __DATA_DIR__ = __SCRIPT_PATH__ + '/data/'
 
 __ANIMATION_DIR__ = __DATA_DIR__ + '/animations/'
+__FRAME_DIR__ = __ANIMATION_DIR__ + '/_frames/'
 
 __MODEL_DIR__ = __DATA_DIR__ + '/models/'
 __TEST_MODEL_DIR__ = __MODEL_DIR__ + '/test/'
@@ -17,6 +18,7 @@ __MERGER_DIR__ = __DATA_DIR__ + '/merger/'
 
 __global_dirs__ = [__DATA_DIR__ ,
                    __ANIMATION_DIR__,
+                   __FRAME_DIR__,
                    __MODEL_DIR__,
                    __TEST_MODEL_DIR__,
                    __FULL_MODEL_DIR__,

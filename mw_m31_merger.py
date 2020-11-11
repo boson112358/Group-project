@@ -57,8 +57,11 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--generation', 
                     help='Generate a new galaxy model', 
                     action='store_true')
-parser.add_argument('--plot', 
-                    help='Allow output plots', 
+parser.add_argument('--animation', 
+                    help='Allow animation output', 
+                    action='store_true')
+parser.add_argument('--snapshot', 
+                    help='Allow simulation snapshots plots output', 
                     action='store_true')
 parser.add_argument('--solar', 
                     help='Add solar system', 
@@ -83,7 +86,8 @@ parser.add_argument('-f',
 args = parser.parse_args()
 
 GENERATION = args.generation
-PLOT = args.plot
+ANIMATION = args.animation
+SNAPSHOT = args.snapshot
 SOLAR = args.solar
 DISK = args.disk
 IGM = args.igm
@@ -91,8 +95,10 @@ TEST = args.test
 NOMERGER = args.nomerger
 CORRECTION = args.correction
 
-if PLOT:
-    print('Plots turned on', flush=True)
+if ANIMATION:
+    print('Animations turned on', flush=True)
+if SNAPSHOT:
+    print('Merger snapshot plots turned on', flush=True)
 
     
 ###### starting conditions ######
@@ -231,7 +237,7 @@ if all(value == False for value in [SOLAR, DISK, IGM]):
     print('Simulating merger with no additional components (t = {} Myr) ...'.format(int(np.round(t_end.value_in(units.Myr), 
                                                                                                  decimals=0))), flush=True)
     sim.simulate_merger(mw, m31, n_halo, n_disk, n_bulge, t_end, converter, 
-                        interval=0.5|units.Myr, plot=PLOT, plot_freq=1000)
+                        interval=0.5|units.Myr, animation=ANIMATION, snapshot=SNAPSHOT)
     
 if DISK:
     print('Simulating merger with disk test particles ...', flush=True)

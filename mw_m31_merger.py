@@ -198,7 +198,7 @@ if GENERATION:
                             #halo_scale_length = glxy_param['halo_scale_length'],
                             #disk parameters
                             disk_number_of_particles = mw_parameters['disk_number_of_particles'],
-                            disk_mass = mw_parametsrs['disk_mass'],
+                            disk_mass = mw_parameters['disk_mass'],
                             #disk_scale_length = glxy_param['disk_scale_length'],
                             #disk_outer_radius = glxy_param['disk_outer_radius'],
                             #disk_scale_height_sech2 = glxy_param['disk_scale_height_sech2'],

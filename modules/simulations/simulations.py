@@ -163,7 +163,7 @@ def plot_contour_merger(galaxy1, galaxy2, title, savepath, filename,
     y_label = "Y [kpc]"
     xy_range = [[-500, 500], [-500, 500]]
     
-    counts,ybins,xbins,image = plt.hist2d(x, y, bins=400, range=xy_range)
+    counts,xbins,ybins,image = plt.hist2d(y, x, bins=400, range=xy_range)
     plt.close()
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -289,37 +289,48 @@ def plt_anim_wrapper(galaxy1, galaxy2, n_disk, n_bulge,
     full_title = common_title + '\nt = {} Myr'.format(int(np.round(current_time.value_in(units.Myr), decimals=0))) 
     
     if diskbulge:
-        plot_diskbulge_merger(halo1, disk1, bulge1, halo2, disk2, bulge2,
-                              full_title,
-                              diskbulge_merger_dir,
-                              filename_prefix + '_diskbulge_merger_' + str(current_snap_number).zfill(4),
-                              is_snapshot=is_snapshot, is_frame=animation)
+        try:
+            plot_diskbulge_merger(halo1, disk1, bulge1, halo2, disk2, bulge2,
+                                  full_title,
+                                  diskbulge_merger_dir,
+                                  filename_prefix + '_diskbulge_merger_' + str(current_snap_number).zfill(4),
+                                  is_snapshot=is_snapshot, is_frame=animation)
+        except:
+            pass
         
         if animation:
             img = read_frame('_diskbulge_temp_frame.png')
             diskbulge_writer.append_data(img)
     
     if contour:
-        plot_contour_merger(galaxy1, galaxy2, 
-                            full_title,
-                            contour_merger_dir,
-                            filename_prefix + '_contour_merger_' + str(current_snap_number).zfill(4),
-                            is_snapshot=is_snapshot, is_frame=animation)
+        try:
+            plot_contour_merger(galaxy1, galaxy2, 
+                                full_title,
+                                contour_merger_dir,
+                                filename_prefix + '_contour_merger_' + str(current_snap_number).zfill(4),
+                                is_snapshot=is_snapshot, is_frame=animation)
+        except:
+            pass
         
         if animation:
             img = read_frame('_contour_temp_frame.png')
             contour_writer.append_data(img)
         
     if zoom:
-        plot_zoomed_merger(disk1, bulge1, disk2, bulge2, 
-                           full_title,
-                           zoom_merger_dir, 
-                           filename_prefix + '_zoomed_merger_' + str(current_snap_number).zfill(4),
-                           is_snapshot=is_snapshot, is_frame=animation)
+        try:
+            plot_zoomed_merger(disk1, bulge1, disk2, bulge2, 
+                               full_title,
+                               zoom_merger_dir, 
+                               filename_prefix + '_zoomed_merger_' + str(current_snap_number).zfill(4),
+                               is_snapshot=is_snapshot, is_frame=animation)
+        except:
+            pass
         
         if animation:
             img = read_frame('_zoom_temp_frame.png')
             zoom_writer.append_data(img)
+            
+    plt.close('all')
     
     if is_snapshot:
         return current_time, current_snap_number
@@ -338,11 +349,20 @@ def check_last_plot_time(current_time, last_plot_time, plot_interval, unit=units
         return False
     
     
+###### animation closing function ######
+
+def close_animation(current_time, last_anim_time, anim_interval=(500 | units.Myr), unit=units.Myr):
+     if (current_time - last_anim_time).value_in(unit) >= anim_interval.value_in(unit):
+        return True
+     else:
+        return False
+    
+    
 ###### merger function ######
     
 def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter, 
                     solver=Gadget2, interval=0.5|units.Myr, 
-                    animation=False, snapshot=False, snap_freq=100):
+                    animation=False, snapshot=False, snap_freq=5000):
     
     #sets up the gravity solver
     #if isinstance(solver, Gadget2):
@@ -377,13 +397,20 @@ def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter,
     out_dir, current_merger = create_merger_output_dir()
     diskbulge_merger_dir, contour_merger_dir, zoom_merger_dir = create_merger_subdirs(out_dir)
     
+    if animation:
+        #initializes animations
+        animation_number = 1
+        last_anim_time = 0 | units.Myr
+        db_writer = GalaxyAnimWriter(current_merger + '_diskbulge_anim' + str(animation_number).zfill(2))
+        cr_writer = GalaxyAnimWriter(current_merger + '_contour_anim'+ str(animation_number).zfill(2))
+        zm_writer = GalaxyAnimWriter(current_merger + '_zoom_anim'+ str(animation_number).zfill(2))
+    else:
+        db_writer = None
+        cr_writer = None
+        zm_writer = None
+    
+    #initializes snapshots
     start_zoom_plot = False
-    
-    db_writer = GalaxyAnimWriter(current_merger + '_diskbulge_anim')
-    cr_writer = GalaxyAnimWriter(current_merger + '_contour_anim')
-    zm_writer = GalaxyAnimWriter(current_merger + '_zoom_anim')
-    
-    
     last_snap_number = 0
     last_plot_time = 0 | units.Myr
     current_time = 0 | units.Myr
@@ -426,6 +453,17 @@ def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter,
                                                             diskbulge_writer=db_writer, contour_writer=cr_writer,
                                                             zoom_writer=zm_writer, zoom=start_zoom_plot)
         
+        if animation:
+            if close_animation(dynamics_code.model_time, last_anim_time):
+                db_writer.close()
+                cr_writer.close()
+                zm_writer.close()
+                animation_number += 1
+                last_anim_time = dynamics_code.model_time
+                db_writer = GalaxyAnimWriter(current_merger + '_diskbulge_anim' + str(animation_number).zfill(2))
+                cr_writer = GalaxyAnimWriter(current_merger + '_contour_anim'+ str(animation_number).zfill(2))
+                zm_writer = GalaxyAnimWriter(current_merger + '_zoom_anim'+ str(animation_number).zfill(2))
+        
         progress.update(current_iter)
         
     progress.finish()
@@ -438,9 +476,11 @@ def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter,
                               diskbulge_writer=db_writer, contour_writer=cr_writer, zoom_writer=zm_writer,
                               zoom=start_zoom_plot)
     dynamics_code.stop()
-    db_writer.close()
-    cr_writer.close()
-    zm_writer.close()
+    
+    if animation:
+        db_writer.close()
+        cr_writer.close()
+        zm_writer.close()
     
 
 def simulate_merger_with_particles(galaxy1, galaxy2, converter, n_halo, n_bulge, n_disk, t_end, script_path, plot=False):
@@ -553,7 +593,7 @@ def simulate_single_galaxy(galaxy1, converter, n_halo, n_bulge, n_disk, t_end, g
     elif isinstance(solver, Fi):
         nw = 1
         
-    dynamics_code = solver(converter, number_of_workers=nw)
+    dynamics_code = solver(converter, number_of_workers=4)
     #dynamics_code = Fi(converter, redirection='none', number_of_workers=1)
     dynamics_code.parameters.epsilon_squared = (100 | units.parsec)**2
     

@@ -47,7 +47,7 @@ from amuse.lab import *
 #ignore warnings (AmuseWarning at end of simulation)
 import warnings
 
-warnings.filterwarnings('ignore')
+#warnings.filterwarnings('ignore')
 
 
 #defines parser for terminal usage
@@ -117,7 +117,7 @@ elif TEST:
 mw_parameters = {'name': 'mw',
                  #halo parameters
                  'n_halo': n_halo,
-                 'halo_scale_length': 12.96 | units.kpc,
+                 'halo_scale_radius': 12.96 | units.kpc,
                  #disk parameters
                  'disk_number_of_particles' : n_disk,
                  'disk_mass' : 19.66 * 2.33 * 10e9 | units.MSun,
@@ -137,7 +137,7 @@ mw_parameters = {'name': 'mw',
 m31_parameters = {'name': 'm31_not_displaced',
                   #halo parameters
                   'n_halo': n_halo,
-                  'halo_scale_length': 12.94 | units.kpc,
+                  'halo_scale_radius': 12.94 | units.kpc,
                   #disk parameters
                   'disk_number_of_particles' : n_disk,
                   'disk_mass' : 33.40 * 2.33 * 10e9 | units.MSun,
@@ -157,7 +157,7 @@ m31_parameters = {'name': 'm31_not_displaced',
 #simulation parameters
 scale_mass_galaxy = 1e12 | units.MSun
 scale_radius_galaxy = 80 | units.kpc
-t_end = 8500 | units.Myr
+t_end = 9000 | units.Myr
 
 #Solar system starting conditions
 n_stars = 10                                       #How many particles we will add
@@ -182,7 +182,7 @@ rotation = np.array([[0.7703,  0.3244,  0.5490],
 
 traslation = [-379.2, 612.7, 283.1] | units.kpc
 radial_velocity = 117 * np.array([0.4898, -0.7914, 0.3657]) | units.kms
-transverse_velocity = 50 * np.array([0.5236, 0.6024, 0.6024]) | units.kms
+transverse_velocity = 1/2 * 50 * np.array([0.5236, 0.6024, 0.6024]) | units.kms
 
 
 ###### galaxy initialization ######
@@ -195,7 +195,7 @@ if GENERATION:
                             #output dir
                             output_directory = '/data1/brentegani/',
                             #halo parameters
-                            #halo_scale_length = glxy_param['halo_scale_length'],
+                            #halo_scale_radius = glxy_param['halo_scale_radius'],
                             #disk parameters
                             disk_number_of_particles = mw_parameters['disk_number_of_particles'],
                             disk_mass = mw_parameters['disk_mass'],
@@ -211,7 +211,7 @@ if GENERATION:
                                            #output dir
                                            output_directory = '/data1/brentegani/',
                                            #halo parameters
-                                           #halo_scale_length = glxy_param['halo_scale_length'],
+                                           #halo_scale_radius = glxy_param['halo_scale_radius'],
                                            #disk parameters
                                            disk_number_of_particles = m31_parameters['disk_number_of_particles'],
                                            disk_mass = m31_parameters['disk_mass'],
@@ -266,7 +266,7 @@ if all(value == False for value in [SOLAR, DISK, IGM]):
     print('Simulating merger with no additional components (t = {} Myr) ...'.format(int(np.round(t_end.value_in(units.Myr), 
                                                                                                  decimals=0))), flush=True)
     sim.simulate_merger(mw, m31, n_halo, n_disk, n_bulge, t_end, converter, 
-                        interval=0.5|units.Myr, animation=ANIMATION, snapshot=SNAPSHOT)
+                        interval=1.|units.Myr, animation=ANIMATION, snapshot=SNAPSHOT, snap_freq=1000)
     
 if DISK:
     print('Simulating merger with disk test particles ...', flush=True)

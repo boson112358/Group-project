@@ -40,7 +40,7 @@ if not os.path.exists(sim_plot_folder):
     
 #ignore warnings (AmuseWarning at end of simulation)
 import warnings
-warnings.filterwarnings('ignore')
+#warnings.filterwarnings('ignore')
 
 #defines parser for terminal usage
 import argparse
@@ -112,7 +112,7 @@ n_halo = 40000
 mw_parameters = {'name': 'mw',
                  #halo parameters
                  'n_halo': n_halo,
-                 'halo_scale_length': 12.96 | units.kpc,
+                 'halo_scale_radius': 12.96 | units.kpc,
                  #disk parameters
                  'disk_number_of_particles' : n_disk,
                  'disk_mass' : 19.66 * 2.33 * 10e9 | units.MSun,
@@ -132,7 +132,7 @@ mw_parameters = {'name': 'mw',
 m31_parameters = {'name': 'm31_not_displaced',
                   #halo parameters
                   'n_halo': n_halo,
-                  'halo_scale_length': 12.94 | units.kpc,
+                  'halo_scale_radius': 12.94 | units.kpc,
                   #disk parameters
                   'disk_number_of_particles' : n_disk,
                   'disk_mass' : 33.40 * 2.33 * 10e9 | units.MSun,
@@ -183,16 +183,16 @@ if GENERATION:
                                       #output dir
                                       output_directory = '/data1/brentegani/',
                                       #halo parameters
-                                      #halo_scale_length = glxy_param['halo_scale_length'],
+                                      halo_scale_radius = glxy_param['halo_scale_radius'],
                                       #disk parameters
                                       disk_number_of_particles = glxy_param['disk_number_of_particles'],
                                       disk_mass = glxy_param['disk_mass'],
-                                      #disk_scale_length = glxy_param['disk_scale_length'],
-                                      #disk_outer_radius = glxy_param['disk_outer_radius'],
-                                      #disk_scale_height_sech2 = glxy_param['disk_scale_height_sech2'],
-                                      #disk_central_radial_velocity_dispersion=glxy_param['disk_central_radial_velocity_dispersion'],
+                                      disk_scale_length = glxy_param['disk_scale_length'],
+                                      disk_outer_radius = glxy_param['disk_outer_radius'],
+                                      disk_scale_height_sech2 = glxy_param['disk_scale_height_sech2'],
+                                      disk_central_radial_velocity_dispersion=glxy_param['disk_central_radial_velocity_dispersion'],
                                       #bulge paramaters
-                                      #bulge_scale_radius = glxy_param['bulge_scale_radius'],
+                                      bulge_scale_radius = glxy_param['bulge_scale_radius'],
                                       bulge_number_of_particles = glxy_param['bulge_number_of_particles'])
 
 else:

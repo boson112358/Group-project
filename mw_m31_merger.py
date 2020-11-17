@@ -13,6 +13,7 @@ import argparse
 import modules.galaxies as gal
 import modules.simulations as sim
 import modules.data_analysis as da
+import modules.solar_system as sol
 from modules.progressbar import progressbar as pbar
 from modules.progressbar import widgets as pbwg
 
@@ -125,7 +126,7 @@ m31_parameters = {'name': 'm31_not_displaced',
 #simulation parameters
 scale_mass_galaxy = 1e12 | units.MSun
 scale_radius_galaxy = 80 | units.kpc
-t_end = 15000 | units.Myr
+t_end = 1000 | units.Myr
 t_step = 5. | units.Myr
 
 #Solar system starting conditions
@@ -251,8 +252,9 @@ if DISK:
 
 if SOLAR:
     print('Simulating MW with solar system ...', flush=True)
-    stars = sol.make_solar_system(n_stars, solar_position, system_radius, MW_velocity_vector, solar_tang_velocity)
-    gal.mw_and_stars(mw, stars, converter, sol.leapfrog_alg, n_halo, t_end, snapshot=SNAPSHOT)
+    mw_velocity_vector = (0, 0, 0) | units.kms
+    stars = sol.make_solar_system(n_stars, solar_position, system_radius, mw_velocity_vector, solar_tang_velocity)
+    sim.mw_and_stars(mw, stars, converter, n_disk, n_bulge, t_end, sol.leapfrog_alg, snapshot=SNAPSHOT)
 
 if IGM:
     print('Simulating merger with IGM ...', flush=True)

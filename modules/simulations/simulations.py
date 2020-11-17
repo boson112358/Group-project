@@ -212,7 +212,7 @@ def make_plot_testdisk(disk1, disk2, test_disk, title, script_path, filename):
     plt.savefig(savepath + filename)
 
     
-def make_plot_galstars(disk, stars, title, filename):
+def make_plot_galstars(disk, bulge, stars, title, filename):
     x_label = "X [kpc]"
     y_label = "Y [kpc]"
     
@@ -227,6 +227,8 @@ def make_plot_galstars(disk, stars, title, filename):
     plt.ylim(-40, 40)
 
     ax.scatter(disk.x.value_in(units.kpc), disk.y.value_in(units.kpc),
+                   c='tab:blue', alpha=1, s=1, lw=0)
+    ax.scatter(bulge.x.value_in(units.kpc), bulge.y.value_in(units.kpc),
                    c='tab:blue', alpha=1, s=1, lw=0)
     ax.scatter(stars.x.value_in(units.kpc), stars.y.value_in(units.kpc),
                    c='tab:orange', alpha=1, marker='.', lw=1)
@@ -691,7 +693,7 @@ def simulate_single_galaxy(galaxy1, converter, n_halo, n_bulge, n_disk, t_end, g
         
     dynamics_code.stop()
 
-def mw_and_stars(galaxy1, stars, converter, n_halo, t_end, star_solver,
+def mw_and_stars(galaxy1, stars, converter, n_disk, n_bulge, t_end, star_solver,
                  interval=1|units.Myr, snapshot=False, snap_freq=300):
     
     leapfrog = True
@@ -701,12 +703,12 @@ def mw_and_stars(galaxy1, stars, converter, n_halo, t_end, star_solver,
     galaxy_dynamics_code = Fi(converter, redirection='none', number_of_workers=1)
     galaxy_dynamics_code.parameters.epsilon_squared = (100 | units.parsec)**2
     
-    set1 = dynamics_code.dm_particles.add_particles(galaxy1)
-    mw_channel = dynamics_code.particles.new_channel_to(set1)
+    set1 = galaxy_dynamics_code.dm_particles.add_particles(galaxy1)
+    mw_channel = galaxy_dynamics_code.particles.new_channel_to(set1)
     galaxy_dynamics_code.particles.move_to_center()
-    mw_channel.update()
+    #mw_channel.update()
     
-    disk1 = set1[:n_halo]
+    halo1, disk1, bulge1 = galaxy_structures(set1, n_disk, n_bulge)
     
     if leapfrog:
         galaxy_dynamics_code.parameters.timestep = 0.5 | units.Myr
@@ -726,7 +728,7 @@ def mw_and_stars(galaxy1, stars, converter, n_halo, t_end, star_solver,
     if snapshot:
         plot_number = 0
         last_plot_time = 0 | units.Myr
-        make_plot_galstars(disk1, stars, 
+        make_plot_galstars(disk1, bulge1, stars, 
                            "MW and Solar System\nt = 0 Myr", 
                            'galstars_' + str(plot_number).zfill(4))
         
@@ -734,10 +736,10 @@ def mw_and_stars(galaxy1, stars, converter, n_halo, t_end, star_solver,
     y = [] | units.kpc
     
     current_iter = 0
-    total_iter = int(t_end/(interval | units.Myr)) + 1
+    total_iter = int(t_end/interval) + 1
     t_end_scalar = t_end.value_in(units.Myr)
     
-    times = np.arange(0., t_end_scalar, interval) | units.Myr
+    times = np.arange(0., t_end_scalar, interval.value_in(units.Myr)) | units.Myr
     
     widgets = ['Step ', pbwg.SimpleProgress(), ' ',
                pbwg.Bar(marker='=', tip='>', left='[', right=']', fill=' '), 
@@ -747,7 +749,7 @@ def mw_and_stars(galaxy1, stars, converter, n_halo, t_end, star_solver,
     for time in times:
         
         solver.evolve_model(time)
-        mw_channel.update()
+        mw_channel.copy()
         
         if leapfrog:
             star_solver(current_iter, stars, galaxy_dynamics_code)
@@ -759,10 +761,10 @@ def mw_and_stars(galaxy1, stars, converter, n_halo, t_end, star_solver,
         
         if snapshot:
             if check_last_plot_time(solver.model_time, last_plot_time, t_end/snap_freq):
-                disk1 = set1[:n_halo]
+                halo1, disk1, bulge1 = galaxy_structures(set1, n_disk, n_bulge)
                 plot_number += 1
                 last_plot_time = solver.model_time
-                make_plot_galstars(disk1, stars, 
+                make_plot_galstars(disk1, bulge1, stars, 
                                    "MW and Solar System\nt = {} Myr".format(np.round(solver.model_time.value_in(units.Myr),
                                                                                      decimals=0)), 
                                    'galstars_' + str(plot_number).zfill(4))

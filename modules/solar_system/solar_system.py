@@ -1,5 +1,10 @@
 from modules import *
 
+import random
+import math
+
+from amuse.lab import Particles, units, Fi
+
 #Here we define the track particles with some values which can change their location and radius of distribution
 
 #If we want to use different position we have to make sure to properly change the velocity.

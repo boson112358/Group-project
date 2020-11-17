@@ -8,50 +8,18 @@ if os.environ.get('DISPLAY','') == '' and os.name != 'nt':
 
 import numpy as np
 import sys
+import argparse
 
 import modules.galaxies as gal
 import modules.simulations as sim
+import modules.data_analysis as da
+from modules.progressbar import progressbar as pbar
+from modules.progressbar import widgets as pbwg
 
-from amuse.lab import units, Particles, nbody_system
-
-"""
-import inspect
-
-
-#finds script path
-filename = inspect.getframeinfo(inspect.currentframe()).filename
-SCRIPT_PATH = os.path.dirname(os.path.abspath(filename))
+from amuse.lab import units, Particles, nbody_system, read_set_from_file
 
 
-plot_folders = [SCRIPT_PATH + '/plots', 
-                SCRIPT_PATH + '/data/merger_plots',
-                SCRIPT_PATH + '/plots/solar-system_plots',
-                SCRIPT_PATH + '/data/merger_contour/',
-                SCRIPT_PATH + '/plots/zoomed-merger-plots/']
-
-for folder in plot_folders:
-    if not os.path.exists(folder):
-        os.makedirs(folder)
-    
-gal_folder = SCRIPT_PATH + '/data/'
-
-if not os.path.exists(gal_folder):
-    os.makedirs(gal_folder)
-
-
-from amuse.lab import *
-#from amuse.ext.galactics_model import new_galactics_model
-#from amuse.couple import bridge
-"""
-
-#ignore warnings (AmuseWarning at end of simulation)
-import warnings
-
-#warnings.filterwarnings('ignore')
-
-
-#defines parser for terminal usage
-import argparse
+###### parser for terminal usage ######
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--generation', 
@@ -157,7 +125,7 @@ m31_parameters = {'name': 'm31_not_displaced',
 #simulation parameters
 scale_mass_galaxy = 1e12 | units.MSun
 scale_radius_galaxy = 80 | units.kpc
-t_end = 15000 | units.Myr
+t_end = 100 | units.Myr
 t_step = 5. | units.Myr
 
 #Solar system starting conditions
@@ -165,9 +133,9 @@ n_stars = 10                                       #How many particles we will a
 solar_radial_distance = 8.2
 solar_position = (-np.sqrt(0.5 * solar_radial_distance**2),
                   np.sqrt(0.5 * solar_radial_distance**2),
-                  0) | units.kpc                 #If we displace MW, we can do it through this vector aswell
-system_radius = 0.100 | units.kpc                #neighbourhood in which we distribute our stars
-solar_tang_velocity = 220 | (units.km/units.s)   #This is roughly the velocity of solarsystem around MW
+                  0) | units.kpc                   #If we displace MW, we can do it through this vector aswell
+system_radius = 0.100 | units.kpc                  #neighbourhood in which we distribute our stars
+solar_tang_velocity = 220 | (units.km/units.s)     #This is roughly the velocity of solarsystem around MW
 
 #Intergal medium starting conditions
 N1 = 5000
@@ -227,27 +195,21 @@ if GENERATION:
                                            #bulge_scale_radius = glxy_param['bulge_scale_radius'],
                                            bulge_number_of_particles = m31_parameters['bulge_number_of_particles'])
 else:
-    mw, _ = gal.load_galaxy_data('mw', test=TEST)
-    m31_not_displaced, _ = gal.load_galaxy_data('m31_not_displaced', test=TEST)
-
-"""
-if not TEST:
-    mw_data_path = SCRIPT_PATH + '/data/{}_full'.format(mw_parameters['name'])
-    m31_not_displaced_data_path = SCRIPT_PATH + '/data/{}_full'.format(m31_parameters['name'])
+    #mw, _ = gal.load_galaxy_data('mw', test=TEST)
+    #m31_not_displaced, _ = gal.load_galaxy_data('m31_not_displaced', test=TEST)
+    mw_data_dir = 'used_models/mw_test_2020-11-10-0001/'
+    m31_data_dir = 'used_models/m31_not_displaced_test_2020-11-10-0001/'
     
-elif TEST:
-    mw_data_path = SCRIPT_PATH + '/data/{}_test'.format(mw_parameters['name'])
-    m31_not_displaced_data_path = SCRIPT_PATH + '/data/{}_test'.format(m31_parameters['name']) 
-
-if os.path.exists(mw_data_path) and os.path.exists(m31_not_displaced_data_path):
-    widgets = ['Found galaxies data, loading: ', pbwg.AnimatedMarker(), pbwg.EndMsg()]
+    widgets = ['Found galaxy data in {}, loading: '.format(mw_data_dir), pbwg.AnimatedMarker(), pbwg.EndMsg()]
     with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
-        mw = read_set_from_file(mw_data_path, "hdf5")
-        m31_not_displaced = read_set_from_file(m31_not_displaced_data_path, 'hdf5')
-else:
-    mw = gal.make_galaxy(converter, mw_parameters, SCRIPT_PATH, test=TEST)
-    m31_not_displaced = gal.make_galaxy(converter, m31_parameters, SCRIPT_PATH, test=TEST)
-"""
+        mw = read_set_from_file(mw_data_dir + 'mw_test_2020-11-10-0001', "hdf5")
+            
+    widgets = ['Found galaxy data in {}, loading: '.format(m31_data_dir), pbwg.AnimatedMarker(), pbwg.EndMsg()]
+    with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
+        m31_not_displaced = read_set_from_file(m31_data_dir + 'm31_not_displaced_test_2020-11-10-0001', "hdf5")
+    
+mw_mass = da.galaxy_total_mass(mw)
+m31_mass = da.galaxy_total_mass(m31_not_displaced)
 
 if NOMERGER:
     print('Quitting after galaxy initialization')
@@ -265,12 +227,20 @@ if CORRECTION:
     m31_not_displaced.mass =  m31_not_displaced.mass * mass_factor
 
 
+###### main ######
+
 if all(value == False for value in [SOLAR, DISK, IGM]):
     m31 = gal.displace_galaxy(m31_not_displaced, rotation, traslation, radial_velocity, transverse_velocity)
-    t_end_str = int(np.round(t_end.value_in(units.Myr), decimals=0))
-    t_step_str = int(np.round(t_step.value_in(units.Myr), decimals=0))
-    print('Simulating merger with no additional components:\nt = {} Myr, t step = {}\nm31 radial velocity factor = {} * 117\nm31 transverse velocity factor = {} * 42'.format(t_end_str, t_step_str, m31_radvel_factor, m31_transvel_factor), 
-          flush=True)
+    
+    t_end_int = int(np.round(t_end.value_in(units.Myr), decimals=0))
+    t_step_int = int(np.round(t_step.value_in(units.Myr), decimals=0))
+    txt_line1 = 'Simulating merger with no additional components:\n'
+    txt_line2 = 't = {} Myr, t step = {}\n'.format(t_end_int, t_step_int)
+    txt_line3 = 'MW mass = {}, M31 mass = {}\n'.format(mw_mass, m31_mass)
+    txt_line4 = 'm31 radial velocity factor = {} * 117\n'.format(m31_radvel_factor)
+    txt_line5 = 'm31 transverse velocity factor = {} * 42'.format(m31_transvel_factor)
+    print(txt_line1 + txt_line2 + txt_line3 + txt_line4 + txt_line5, flush=True)
+
     sim.simulate_merger(mw, m31, n_halo, n_disk, n_bulge, t_end, converter, 
                         interval=5.|units.Myr, animation=ANIMATION, snapshot=SNAPSHOT, snap_freq=1000)
     
@@ -287,7 +257,6 @@ if SOLAR:
     stars = sol.make_solar_system(n_stars, solar_position, system_radius, MW_velocity_vector, solar_tang_velocity)
     gal.mw_and_stars(MW, stars, converter, sol.leapfrog_alg, n_halo, t_end, SCRIPT_PATH, plot=PLOT)
 
-
 if IGM:
     print('Simulating merger with IGM ...', flush=True)
     widgets = ['Building IGM: ', pbwg.AnimatedMarker(), ' ',
@@ -296,4 +265,3 @@ if IGM:
         sph_code = igm.setup_sph_code(Gadget2, N1, N2, L, rho, u)
 
     gal.merger_and_igm(galaxy1, galaxy2, converter, sph_code, n_halo, t_end, SCRIPT_PATH, plot=PLOT)
-

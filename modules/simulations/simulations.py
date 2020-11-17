@@ -5,12 +5,12 @@ from modules.common import __SCRIPT_PATH__, __ANIMATION_DIR__, __FRAME_DIR__
 from modules.progressbar import progressbar as pbar
 from modules.progressbar import widgets as pbwg
 
-
 import sys
 import os
 import datetime
 import imageio
 import numpy as np
+import pandas as pd
 
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
@@ -358,6 +358,22 @@ def close_animation(current_time, last_anim_time, anim_interval=(500 | units.Myr
         return False
     
     
+###### galaxy separation ######
+
+def separation(glxy1, glxy2):
+    cm1 = glxy1.center_of_mass()
+    cm2 = glxy2.center_of_mass()
+    sep = np.sqrt((cm2.x - cm1.x)**2 + (cm2.y - cm1.y)**2 + (cm2.z + cm1.z)**2)
+    
+    return sep
+
+def sep_logs(sep_list, sep, current_time):
+    sep_list[0].append(current_time)
+    sep_list[1].append(sep)
+    
+    return sep_list
+
+    
 ###### merger function ######
     
 def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter, 
@@ -422,6 +438,10 @@ def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter,
                               diskbulge_writer=db_writer, contour_writer=cr_writer, zoom_writer=zm_writer,
                               zoom=start_zoom_plot)
     
+    #initializes separation
+    sep_list = [[], []]
+    sep_list = sep_logs(sep_list, separation(set1, set2).value_in(units.kpc), current_time.value_in(units.Myr))
+    
     current_iter = 0
     t_end_in_Myr = t_end.as_quantity_in(units.Myr)
     total_iter = int(t_end_in_Myr/interval) + 1
@@ -452,6 +472,8 @@ def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter,
                                                             animation=animation, snapshot=snapshot,
                                                             diskbulge_writer=db_writer, contour_writer=cr_writer,
                                                             zoom_writer=zm_writer, zoom=start_zoom_plot)
+        sep_list = sep_logs(sep_list, separation(set1, set2).value_in(units.kpc), 
+                            dynamics_code.model_time.value_in(units.Myr))
         
         if animation:
             if close_animation(dynamics_code.model_time, last_anim_time):
@@ -468,6 +490,7 @@ def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter,
         
     progress.finish()
     
+    """
     _a, _b = plt_anim_wrapper(set1, set2, n_disk, n_bulge, 
                               last_snap_number, t_end, last_plot_time - 2*interval, 'MW M31 merger', 
                               diskbulge_merger_dir, contour_merger_dir, zoom_merger_dir, 
@@ -475,7 +498,17 @@ def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter,
                               animation=animation, snapshot=snapshot,
                               diskbulge_writer=db_writer, contour_writer=cr_writer, zoom_writer=zm_writer,
                               zoom=start_zoom_plot)
+    sep_list = sep_logs(sep_list, separation(set1, set2).value_in(units.kpc), 
+                            t_end.value_in(units.Myr))
+    """
+                            
     dynamics_code.stop()
+    
+    sep_dict = {}
+    sep_dict.update({'time (Myr)': sep_list[0]})
+    sep_dict.update({'sep (kpc)': sep_list[1]})
+    df_sep = pd.DataFrame(sep_dict)
+    df_sep.to_csv('{}separation.csv'.format(out_dir), index=False)
     
     if animation:
         db_writer.close()

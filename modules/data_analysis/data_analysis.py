@@ -28,8 +28,9 @@ def create_model_analysis_dirs(glxy_path):
 
 ###### utility functions ######
 
-def galaxy_total_mass(galaxy):
-    print('Galaxy total mass: ' + str(np.sum(galaxy.mass).in_(units.MSun)))   #Check total mass, should be around 1.5e12 MSun
+def galaxy_total_mass(galaxy, verbose=False):
+    if verbose:
+        print('Galaxy total mass: ' + str(np.sum(galaxy.mass).in_(units.MSun)))   #Check total mass, should be around 1.5e12 MSun
     return(np.sum(galaxy.mass).in_(units.MSun))
 
 """

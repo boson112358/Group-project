@@ -53,16 +53,19 @@ def position_limit(structure, axes=[0, 1]):
     return max_coordinate
 
 
-def average_velocity_at_radius(radius, velocity, interval_length=1/25, max_radius=30):
-    interval_limit = np.arange(0, max_radius + interval_length, step=interval_length)
+def average_velocity_at_radius(radius, velocity, interval_length=1/1000, max_radius=30):
+    interval_limit = np.arange(0, max_radius + interval_length, step=max_radius*interval_length)
     average_vel = []
     for i in range(1, len(interval_limit), 1):
         bin_l = interval_limit[i-1]
         bin_r = interval_limit[i]
         bin_velocity = []
+        index_list = []
         for index, value in enumerate(radius):
             if value > bin_l and value <= bin_r:
-                bin_velocity.append(velocity[index])
+                index_list.append(index)
+        for j in index_list:
+            bin_velocity.append(velocity[j])
         bin_average = np.mean(bin_velocity)
         average_vel.append(bin_average)
     
@@ -153,8 +156,8 @@ def galaxy_rotation_curve(structure_distances, structure_velocities, glxy_path, 
     if labels == None:
         labels = [None for i in range(len(structure_distances))]
     
-    default_colors = ['tab:blue', 'tab:orange', 'tab:green']
-    used_colors = [default_colors[i] for i in range(len(structure_distances))]
+    #default_colors = ['tab:blue', 'tab:orange', 'tab:green']
+    #used_colors = [default_colors[i] for i in range(len(structure_distances))]
     
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -162,8 +165,8 @@ def galaxy_rotation_curve(structure_distances, structure_velocities, glxy_path, 
     if labels == None:
         labels = [None for i in range(len(structure_distances))]
     
-    for distance, velocity, c, label, in zip(structure_distances, structure_velocities, used_colors, labels):
-        structure_rotation_curve(ax, distance, velocity, label=label, color=c)
+    #for distance, velocity, label, in zip(structure_distances, structure_velocities, labels):
+    structure_rotation_curve(ax, structure_distances, structure_velocities, label=labels)
     
     #x_max = np.amax(distance) + 0.1
     #y_max = np.amax(total_velocity) + 10
@@ -178,7 +181,7 @@ def galaxy_rotation_curve(structure_distances, structure_velocities, glxy_path, 
     #plt.xlim(-0.1, x_max)
     #plt.ylim(y_min, y_max)
     
-    if label == None:
+    if labels == None:
         pass
     else:
         plt.legend(loc='upper right')

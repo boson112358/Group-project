@@ -317,8 +317,8 @@ if ANALYSIS:
                                          disk_df['total_velocity'].values, 
                                          bulge_df['total_velocity'].values), axis=0)
         
-        da.galaxy_rotation_curve([com_distance_full], [total_vel_full], glxy_path, 
-                                 glxy_name + corr +'_rotation_curve', labels=['galaxy'])
+        da.galaxy_rotation_curve(com_distance_full, total_vel_full, glxy_path, 
+                                 glxy_name + corr +'_rotation_curve', labels=glxy_param['name'])
         
 
 ###### running simulation ######

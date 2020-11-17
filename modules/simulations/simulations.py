@@ -41,14 +41,15 @@ def create_merger_subdirs(current_out_dir):
     diskbulge_merger_dir = current_out_dir + '/merger_plots/'
     contour_merger_dir = current_out_dir + '/merger_contour/'
     zoom_merger_dir = current_out_dir + '/merger_zoom/'
+    mw_zoom_dir = current_out_dir + '/merger_mwzoom/'
     
-    dirs = [diskbulge_merger_dir, contour_merger_dir, zoom_merger_dir]
+    dirs = [diskbulge_merger_dir, contour_merger_dir, zoom_merger_dir, mw_zoom_dir]
     
     for direct in dirs:
         if not os.path.exists(direct):
             os.makedirs(direct)
             
-    return diskbulge_merger_dir, contour_merger_dir, zoom_merger_dir
+    return diskbulge_merger_dir, contour_merger_dir, zoom_merger_dir, mw_zoom_dir
 
 
 ###### create single galaxy plot output ######
@@ -191,6 +192,49 @@ def plot_contour_merger(galaxy1, galaxy2, title, savepath, filename,
     if is_frame:
         framename = '_contour_temp_frame'
         plt.savefig(__FRAME_DIR__ + framename)
+        
+        
+def plot_mw_zoom(mw_galaxy, mw_disk, mw_bulge, m31_disk, m31_bulge, title, savepath, filename,
+                 particles=None, is_snapshot=True, is_frame=True):
+    x_label = "X [kpc]"
+    y_label = "Y [kpc]"
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.set_aspect('equal')
+    
+    com = mw_galaxy.center_of_mass()
+    
+    plt.title(title)
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.xlim(-60 + com, com + 60)
+    plt.ylim(-60 + com, com + 60)
+
+    #plotting mw_halo and mw_disk
+    ax.scatter(mw_disk.x.value_in(units.kpc), mw_disk.y.value_in(units.kpc),
+               c='tab:blue', alpha=1, s=1, lw=0)
+    ax.scatter(mw_bulge.x.value_in(units.kpc), mw_bulge.y.value_in(units.kpc),
+               c='tab:blue', alpha=1, s=1, lw=0, label='mw')
+    
+    #plotting stars
+    if particles != None:
+        ax.scatter(particles.x.value_in(units.kpc), particles.y.value_in(units.kpc),
+                   c='tab:black', alpha=1, marker='.', lw=1, label='solar system')
+    
+    #plotting m31_halo and m31_disk
+    ax.scatter(m31_disk.x.value_in(units.kpc), m31_disk.y.value_in(units.kpc),
+               c='tab:orange', alpha=1, s=1, lw=0)
+    ax.scatter(m31_bulge.x.value_in(units.kpc), m31_bulge.y.value_in(units.kpc),
+               c='tab:orange', alpha=1, s=1, lw=0, label='m31')
+    
+    plt.legend(loc='upper right')
+    
+    if is_snapshot:
+        plt.savefig(savepath + filename)
+    if is_frame:
+        framename = '_mwzoom_temp_frame'
+        plt.savefig(__FRAME_DIR__ + framename)
     
     
 def make_plot_testdisk(disk1, disk2, test_disk, title, script_path, filename):
@@ -277,10 +321,10 @@ def plot_single_galaxy(halo, disk, bulge, title, glxy_path, filename):
 
 def plt_anim_wrapper(galaxy1, galaxy2, n_disk, n_bulge, 
                      last_snap_number, current_time, last_plot_time, common_title, 
-                     diskbulge_merger_dir, contour_merger_dir, zoom_merger_dir, 
+                     diskbulge_merger_dir, contour_merger_dir, zoom_merger_dir, mw_zoom_dir,
                      filename_prefix, t_end, snap_freq, particles=None,
                      snapshot=True, animation=True, 
-                     diskbulge=True, contour=True, zoom=True, 
+                     diskbulge=True, contour=True, zoom=True, mwzoom=True,
                      diskbulge_writer=None, contour_writer=None, zoom_writer=None):
     
     is_snapshot = False
@@ -340,6 +384,19 @@ def plt_anim_wrapper(galaxy1, galaxy2, n_disk, n_bulge,
         if animation:
             img = read_frame('_zoom_temp_frame.png')
             zoom_writer.append_data(img)
+            
+            
+     
+    if mwzoom:
+        try:
+            plot_mw_zoom(galaxy1, disk1, bulge1, disk2, bulge2, 
+                         full_title, 
+                         mw_zoom_dir, 
+                         filename_prefix + '_mwzoomed_merger_' + str(current_snap_number).zfill(4),
+                         particles=particles, 
+                         is_snapshot=is_snapshot, is_frame=animation):
+        except:
+            pass
             
     plt.close('all')
     
@@ -431,7 +488,7 @@ def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter,
     
     #creates output dirs
     out_dir, current_merger = create_merger_output_dir()
-    diskbulge_merger_dir, contour_merger_dir, zoom_merger_dir = create_merger_subdirs(out_dir)
+    diskbulge_merger_dir, contour_merger_dir, zoom_merger_dir, mw_zoom_dir = create_merger_subdirs(out_dir)
     
     if animation:
         #initializes animations
@@ -452,7 +509,7 @@ def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter,
     current_time = 0 | units.Myr
     _a, _b = plt_anim_wrapper(set1, set2, n_disk, n_bulge, 
                               last_snap_number, current_time, last_plot_time, 'MW M31 merger', 
-                              diskbulge_merger_dir, contour_merger_dir, zoom_merger_dir, 
+                              diskbulge_merger_dir, contour_merger_dir, zoom_merger_dir, mw_zoom_dir,
                               'mw_m31', t_end, 100000, particles=particles,
                               animation=animation, snapshot=snapshot,
                               diskbulge_writer=db_writer, contour_writer=cr_writer, zoom_writer=zm_writer,
@@ -485,12 +542,14 @@ def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter,
         mw_channel.copy()
         m31_channel.copy()
         
-        if last_plot_time.value_in(units.Myr) > 4000:
+        if last_plot_time.value_in(units.Myr) > 3000:
             start_zoom_plot = True
+            print('Start plotting central zoom', flush=True)
         last_plot_time, last_snap_number = plt_anim_wrapper(set1, set2, n_disk, n_bulge, 
                                                             last_snap_number, dynamics_code.model_time, last_plot_time, 
                                                             'MW M31 merger', 
-                                                            diskbulge_merger_dir, contour_merger_dir, zoom_merger_dir, 
+                                                            diskbulge_merger_dir, contour_merger_dir, 
+                                                            zoom_merger_dir, mw_zoom_dir,
                                                             'mw_m31', t_end, snap_freq, particles=particles,
                                                             animation=animation, snapshot=snapshot,
                                                             diskbulge_writer=db_writer, contour_writer=cr_writer,

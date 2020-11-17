@@ -119,7 +119,7 @@ def plot_diskbulge_merger(mw_halo, mw_disk, mw_bulge, m31_halo, m31_disk, m31_bu
         plt.savefig(__FRAME_DIR__ + framename)
     
     
-def plot_zoomed_merger(mw_disk, mw_bulge, m31_disk, m31_bulge, title, savepath, filename,
+def plot_zoomed_merger(mw_disk, mw_bulge, m31_disk, m31_bulge, title, savepath, filename, particles=None,
                        is_snapshot=True, is_frame=True):
     x_label = "X [kpc]"
     y_label = "Y [kpc]"
@@ -139,6 +139,11 @@ def plot_zoomed_merger(mw_disk, mw_bulge, m31_disk, m31_bulge, title, savepath, 
                c='tab:blue', alpha=0.6, s=1, lw=0)
     ax.scatter(mw_disk.x.value_in(units.kpc), mw_disk.y.value_in(units.kpc),
                c='tab:blue', alpha=1, s=1, lw=0, label='mw')
+    
+    #plotting stars
+    if particles != None:
+        ax.scatter(particles.x.value_in(units.kpc), particles.y.value_in(units.kpc),
+                   c='tab:black', alpha=1, marker='.', lw=1, label='solar system')
     
     #plotting m31_halo and m31_disk
     ax.scatter(m31_bulge.x.value_in(units.kpc), m31_bulge.y.value_in(units.kpc),
@@ -273,7 +278,7 @@ def plot_single_galaxy(halo, disk, bulge, title, glxy_path, filename):
 def plt_anim_wrapper(galaxy1, galaxy2, n_disk, n_bulge, 
                      last_snap_number, current_time, last_plot_time, common_title, 
                      diskbulge_merger_dir, contour_merger_dir, zoom_merger_dir, 
-                     filename_prefix, t_end, snap_freq, 
+                     filename_prefix, t_end, snap_freq, particles=None,
                      snapshot=True, animation=True, 
                      diskbulge=True, contour=True, zoom=True, 
                      diskbulge_writer=None, contour_writer=None, zoom_writer=None):
@@ -327,6 +332,7 @@ def plt_anim_wrapper(galaxy1, galaxy2, n_disk, n_bulge,
                                full_title,
                                zoom_merger_dir, 
                                filename_prefix + '_zoomed_merger_' + str(current_snap_number).zfill(4),
+                               particles=particles,
                                is_snapshot=is_snapshot, is_frame=animation)
         except:
             pass
@@ -383,15 +389,16 @@ def sep_logs(sep_list, sep, current_time):
     
 def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter, 
                     solver=Gadget2, interval=0.5|units.Myr, 
-                    animation=False, snapshot=False, snap_freq=5000):
+                    animation=False, snapshot=False, snap_freq=5000,
+                    particles=None, particles_solver=None):
     
     #sets up the gravity solver
-    #if isinstance(solver, Gadget2):
-    #    nw = 4
-    #elif isinstance(solver, Fi):
-    #    nw = 1
+    if particles == None:
+        dynamics_code = Gadget2(converter, number_of_workers=4)
+    else:
+        dynamics_code = Fi(converter, redirection='none', number_of_workers=1)
     
-    dynamics_code = solver(converter, number_of_workers=4)
+    #dynamics_code = solver(converter, number_of_workers=4)
     dynamics_code.parameters.epsilon_squared = (100 | units.parsec)**2
     
     if isinstance(dynamics_code, Gadget2) or isinstance(dynamics_code, Fi):
@@ -403,10 +410,18 @@ def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter,
         set1 = dynamics_code.particles.add_particles(galaxy1)
         set2 = dynamics_code.particles.add_particles(galaxy2)
     
+    #computes coordinate difference between mw center of mass and solar system
+    if particles != None:
+        deltapos = set1.center_of_mass() - particles.position
+    
     #moves system to center of mass and creates channels
     dynamics_code.particles.move_to_center()
     mw_channel = dynamics_code.particles.new_channel_to(set1)
     m31_channel = dynamics_code.particles.new_channel_to(set2)
+    
+    #moves the solar system particles
+    if particles != None:
+        particles.position = set1.center_of_mass() - deltapos 
         
     if isinstance(dynamics_code, Gadget2):
         dynamics_code.timestep = interval
@@ -438,7 +453,7 @@ def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter,
     _a, _b = plt_anim_wrapper(set1, set2, n_disk, n_bulge, 
                               last_snap_number, current_time, last_plot_time, 'MW M31 merger', 
                               diskbulge_merger_dir, contour_merger_dir, zoom_merger_dir, 
-                              'mw_m31', t_end, 100000, 
+                              'mw_m31', t_end, 100000, particles=particles,
                               animation=animation, snapshot=snapshot,
                               diskbulge_writer=db_writer, contour_writer=cr_writer, zoom_writer=zm_writer,
                               zoom=start_zoom_plot)
@@ -464,6 +479,9 @@ def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter,
         if isinstance(dynamics_code, Fi):
             dynamics_code.update_particle_set()
             
+        if particles != None:
+            particles_solver(current_iter, particles, dynamics_code)
+            
         mw_channel.copy()
         m31_channel.copy()
         
@@ -473,7 +491,7 @@ def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter,
                                                             last_snap_number, dynamics_code.model_time, last_plot_time, 
                                                             'MW M31 merger', 
                                                             diskbulge_merger_dir, contour_merger_dir, zoom_merger_dir, 
-                                                            'mw_m31', t_end, snap_freq, 
+                                                            'mw_m31', t_end, snap_freq, particles=particles,
                                                             animation=animation, snapshot=snapshot,
                                                             diskbulge_writer=db_writer, contour_writer=cr_writer,
                                                             zoom_writer=zm_writer, zoom=start_zoom_plot)
@@ -509,6 +527,7 @@ def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter,
                             
     dynamics_code.stop()
     
+    #creates separation dictionary
     sep_dict = {}
     sep_dict.update({'time (Myr)': sep_list[0]})
     sep_dict.update({'sep (kpc)': sep_list[1]})

@@ -35,6 +35,9 @@ parser.add_argument('--snapshot',
 parser.add_argument('--solar', 
                     help='Add solar system', 
                     action='store_true')
+parser.add_argument('--mwsolar', 
+                    help='Simulates only the MW with the Solar System', 
+                    action='store_true')
 parser.add_argument('--disk', 
                     help='Add test disk to MW', 
                     action='store_true')
@@ -58,6 +61,7 @@ GENERATION = args.generation
 ANIMATION = args.animation
 SNAPSHOT = args.snapshot
 SOLAR = args.solar
+MWSOLAR = args.mwsolar
 DISK = args.disk
 IGM = args.igm
 TEST = args.test
@@ -126,7 +130,7 @@ m31_parameters = {'name': 'm31_not_displaced',
 #simulation parameters
 scale_mass_galaxy = 1e12 | units.MSun
 scale_radius_galaxy = 80 | units.kpc
-t_end = 1000 | units.Myr
+t_end = 7000 | units.Myr
 t_step = 5. | units.Myr
 
 #Solar system starting conditions
@@ -137,6 +141,7 @@ solar_position = (-np.sqrt(0.5 * solar_radial_distance**2),
                   0) | units.kpc                   #If we displace MW, we can do it through this vector aswell
 system_radius = 0.100 | units.kpc                  #neighbourhood in which we distribute our stars
 solar_tang_velocity = 220 | (units.km/units.s)     #This is roughly the velocity of solarsystem around MW
+mw_velocity_vector = (0, 0, 0) | units.kms
 
 #Intergal medium starting conditions
 N1 = 5000
@@ -152,7 +157,7 @@ rotation = np.array([[0.7703,  0.3244,  0.5490],
 
 traslation = [-379.2, 612.7, 283.1] | units.kpc
 
-m31_radvel_factor = 0.9
+m31_radvel_factor = 0.6
 m31_transvel_factor = 0.25
 radial_velocity =  m31_radvel_factor * 117 * np.array([0.4898, -0.7914, 0.3657]) | units.kms
 transverse_velocity = m31_transvel_factor * 42 * np.array([0.5236, 0.6024, 0.6024]) | units.kms
@@ -230,7 +235,7 @@ if CORRECTION:
 
 ###### main ######
 
-if all(value == False for value in [SOLAR, DISK, IGM]):
+if all(value == False for value in [MWSOLAR, DISK, IGM]):
     m31 = gal.displace_galaxy(m31_not_displaced, rotation, traslation, radial_velocity, transverse_velocity)
     
     t_end_int = int(np.round(t_end.value_in(units.Myr), decimals=0))
@@ -241,16 +246,25 @@ if all(value == False for value in [SOLAR, DISK, IGM]):
     txt_line4 = 'm31 radial velocity factor = {} * 117\n'.format(m31_radvel_factor)
     txt_line5 = 'm31 transverse velocity factor = {} * 42'.format(m31_transvel_factor)
     print(txt_line1 + txt_line2 + txt_line3 + txt_line4 + txt_line5, flush=True)
+    
+    if SOLAR:
+        print('Adding Solar System (n = {}) ...'.format(n_stars), flush=True)
+        stars = sol.make_solar_system(n_stars, solar_position, system_radius, mw_velocity_vector, solar_tang_velocity)
+        stars_solver = sol.leapfrog_alg
+    else:
+        stars = None
+        stars_solver = None
 
     sim.simulate_merger(mw, m31, n_halo, n_disk, n_bulge, t_end, converter, 
-                        interval=5.|units.Myr, animation=ANIMATION, snapshot=SNAPSHOT, snap_freq=1000)
+                        interval=5.|units.Myr, animation=ANIMATION, snapshot=SNAPSHOT, snap_freq=1000,
+                        particles=stars, particles_solver=stars_solver)
     
 if DISK:
     print('Simulating merger with disk test particles ...', flush=True)
     test_disk = gal.test_particles(MW, n_halo, n_bulge, n_disk)
     gal.simulate_merger_with_particles(M31, MW, converter, n_halo, n_bulge, n_disk, t_end, SCRIPT_PATH, plot=PLOT)
 
-if SOLAR:
+if MWSOLAR:
     print('Simulating MW with solar system ...', flush=True)
     mw_velocity_vector = (0, 0, 0) | units.kms
     stars = sol.make_solar_system(n_stars, solar_position, system_radius, mw_velocity_vector, solar_tang_velocity)

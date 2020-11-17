@@ -157,7 +157,8 @@ m31_parameters = {'name': 'm31_not_displaced',
 #simulation parameters
 scale_mass_galaxy = 1e12 | units.MSun
 scale_radius_galaxy = 80 | units.kpc
-t_end = 9000 | units.Myr
+t_end = 15000 | units.Myr
+t_step = 5. | units.Myr
 
 #Solar system starting conditions
 n_stars = 10                                       #How many particles we will add
@@ -181,8 +182,11 @@ rotation = np.array([[0.7703,  0.3244,  0.5490],
                      [-0.0839, -0.8019, 0.5915]])
 
 traslation = [-379.2, 612.7, 283.1] | units.kpc
-radial_velocity = 117 * np.array([0.4898, -0.7914, 0.3657]) | units.kms
-transverse_velocity = 1/2 * 50 * np.array([0.5236, 0.6024, 0.6024]) | units.kms
+
+m31_radvel_factor = 0.9
+m31_transvel_factor = 0.25
+radial_velocity =  m31_radvel_factor * 117 * np.array([0.4898, -0.7914, 0.3657]) | units.kms
+transverse_velocity = m31_transvel_factor * 42 * np.array([0.5236, 0.6024, 0.6024]) | units.kms
 
 
 ###### galaxy initialization ######
@@ -263,10 +267,12 @@ if CORRECTION:
 
 if all(value == False for value in [SOLAR, DISK, IGM]):
     m31 = gal.displace_galaxy(m31_not_displaced, rotation, traslation, radial_velocity, transverse_velocity)
-    print('Simulating merger with no additional components (t = {} Myr) ...'.format(int(np.round(t_end.value_in(units.Myr), 
-                                                                                                 decimals=0))), flush=True)
+    t_end_str = int(np.round(t_end.value_in(units.Myr), decimals=0))
+    t_step_str = int(np.round(t_step.value_in(units.Myr), decimals=0))
+    print('Simulating merger with no additional components:\nt = {} Myr, t step = {}\nm31 radial velocity factor = {} * 117\nm31 transverse velocity factor = {} * 42'.format(t_end_str, t_step_str, m31_radvel_factor, m31_transvel_factor), 
+          flush=True)
     sim.simulate_merger(mw, m31, n_halo, n_disk, n_bulge, t_end, converter, 
-                        interval=1.|units.Myr, animation=ANIMATION, snapshot=SNAPSHOT, snap_freq=1000)
+                        interval=5.|units.Myr, animation=ANIMATION, snapshot=SNAPSHOT, snap_freq=1000)
     
 if DISK:
     print('Simulating merger with disk test particles ...', flush=True)

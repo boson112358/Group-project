@@ -237,6 +237,8 @@ def make_plot_galstars(disk, bulge, stars, title, filename):
     
     plt.savefig(savepath + filename)
     
+    plt.close()
+    
     
 def plot_single_galaxy(halo, disk, bulge, title, glxy_path, filename):
     x_label = "X [kpc]"

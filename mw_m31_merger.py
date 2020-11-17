@@ -125,11 +125,11 @@ m31_parameters = {'name': 'm31_not_displaced',
 #simulation parameters
 scale_mass_galaxy = 1e12 | units.MSun
 scale_radius_galaxy = 80 | units.kpc
-t_end = 100 | units.Myr
+t_end = 15000 | units.Myr
 t_step = 5. | units.Myr
 
 #Solar system starting conditions
-n_stars = 10                                       #How many particles we will add
+n_stars = 50                                       #How many particles we will add
 solar_radial_distance = 8.2
 solar_position = (-np.sqrt(0.5 * solar_radial_distance**2),
                   np.sqrt(0.5 * solar_radial_distance**2),
@@ -251,11 +251,8 @@ if DISK:
 
 if SOLAR:
     print('Simulating MW with solar system ...', flush=True)
-    MW.position += [100.0, 100.0, 0] | units.kpc
-    t_end = 400 | units.Myr
-    #MW.rotate(-np.pi/4, -np.pi/4, 0.0)
     stars = sol.make_solar_system(n_stars, solar_position, system_radius, MW_velocity_vector, solar_tang_velocity)
-    gal.mw_and_stars(MW, stars, converter, sol.leapfrog_alg, n_halo, t_end, SCRIPT_PATH, plot=PLOT)
+    gal.mw_and_stars(mw, stars, converter, sol.leapfrog_alg, n_halo, t_end, snapshot=SNAPSHOT)
 
 if IGM:
     print('Simulating merger with IGM ...', flush=True)

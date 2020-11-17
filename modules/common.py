@@ -16,13 +16,16 @@ __FULL_MODEL_DIR__ = __MODEL_DIR__ + '/full/'
 
 __MERGER_DIR__ = __DATA_DIR__ + '/merger/'
 
+__SOLAR_DIR__ = __DATA_DIR__ + '/mw_solar/'
+
 __global_dirs__ = [__DATA_DIR__ ,
                    __ANIMATION_DIR__,
                    __FRAME_DIR__,
                    __MODEL_DIR__,
                    __TEST_MODEL_DIR__,
                    __FULL_MODEL_DIR__,
-                   __MERGER_DIR__]
+                   __MERGER_DIR__,
+                   __SOLAR_DIR__]
                    
 for direct in __global_dirs__:
     if not os.path.exists(direct):

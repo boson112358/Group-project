@@ -1,6 +1,6 @@
 ###### importing modules ######
 
-from modules.common import __MERGER_DIR__, galaxy_structures
+from modules.common import __MERGER_DIR__, __SOLAR_DIR__, galaxy_structures
 from modules.common import __SCRIPT_PATH__, __ANIMATION_DIR__, __FRAME_DIR__
 from modules.progressbar import progressbar as pbar
 from modules.progressbar import widgets as pbwg
@@ -49,6 +49,7 @@ def create_merger_subdirs(current_out_dir):
             os.makedirs(direct)
             
     return diskbulge_merger_dir, contour_merger_dir, zoom_merger_dir
+
 
 ###### create single galaxy plot output ######
 
@@ -211,7 +212,7 @@ def make_plot_testdisk(disk1, disk2, test_disk, title, script_path, filename):
     plt.savefig(savepath + filename)
 
     
-def make_plot_galstars(disk, stars, title, script_path, filename):
+def make_plot_galstars(disk, stars, title, filename):
     x_label = "X [kpc]"
     y_label = "Y [kpc]"
     
@@ -222,15 +223,15 @@ def make_plot_galstars(disk, stars, title, script_path, filename):
     plt.title(title)
     plt.xlabel(x_label)
     plt.ylabel(y_label)
-    plt.xlim(-100, 100)
-    plt.ylim(-100, 100)
+    plt.xlim(-40, 40)
+    plt.ylim(-40, 40)
 
     ax.scatter(disk.x.value_in(units.kpc), disk.y.value_in(units.kpc),
                    c='tab:blue', alpha=1, s=1, lw=0)
     ax.scatter(stars.x.value_in(units.kpc), stars.y.value_in(units.kpc),
                    c='tab:orange', alpha=1, marker='.', lw=1)
     
-    savepath = script_path + '/plots/solar-system-plots/'
+    savepath = __SOLAR_DIR__
     
     plt.savefig(savepath + filename)
     
@@ -690,19 +691,20 @@ def simulate_single_galaxy(galaxy1, converter, n_halo, n_bulge, n_disk, t_end, g
         
     dynamics_code.stop()
 
-def mw_and_stars(galaxy1, stars, galaxy_converter, star_solver, n_halo, t_end, script_path, plot=False):
+def mw_and_stars(galaxy1, stars, converter, n_halo, t_end, star_solver,
+                 interval=1|units.Myr, snapshot=False, snap_freq=300):
+    
     leapfrog = True
-    if isinstance(star_solver, (BHTree, ph4)):
+    if isinstance(star_solver, (BHTree)):
         leapfrog = False
     
-    galaxy_converter = nbody_system.nbody_to_si(1.0e12|units.MSun, 100|units.kpc)
-    
-    galaxy_dynamics_code = Fi(galaxy_converter, redirection='none', number_of_workers=1)
+    galaxy_dynamics_code = Fi(converter, redirection='none', number_of_workers=1)
     galaxy_dynamics_code.parameters.epsilon_squared = (100 | units.parsec)**2
     
-    set1 = galaxy_dynamics_code.particles.add_particles(galaxy1)
-    
+    set1 = dynamics_code.dm_particles.add_particles(galaxy1)
+    mw_channel = dynamics_code.particles.new_channel_to(set1)
     galaxy_dynamics_code.particles.move_to_center()
+    mw_channel.update()
     
     disk1 = set1[:n_halo]
     
@@ -721,20 +723,19 @@ def mw_and_stars(galaxy1, stars, galaxy_converter, star_solver, n_halo, t_end, s
         gravity.timestep = 0.5 | units.Myr
         solver = gravity
     
-    if plot == True:
+    if snapshot:
         plot_number = 0
+        last_plot_time = 0 | units.Myr
         make_plot_galstars(disk1, stars, 
                            "MW and Solar System\nt = 0 Myr", 
-                           script_path, 'galstars_' + str(plot_number).zfill(4))
+                           'galstars_' + str(plot_number).zfill(4))
         
     x = [] | units.kpc
     y = [] | units.kpc
     
     current_iter = 0
-    interval = 0.5
     total_iter = int(t_end/(interval | units.Myr)) + 1
     t_end_scalar = t_end.value_in(units.Myr)
-    #print(t_end_scalar)
     
     times = np.arange(0., t_end_scalar, interval) | units.Myr
     
@@ -746,6 +747,7 @@ def mw_and_stars(galaxy1, stars, galaxy_converter, star_solver, n_halo, t_end, s
     for time in times:
         
         solver.evolve_model(time)
+        mw_channel.update()
         
         if leapfrog:
             star_solver(current_iter, stars, galaxy_dynamics_code)
@@ -755,13 +757,15 @@ def mw_and_stars(galaxy1, stars, galaxy_converter, star_solver, n_halo, t_end, s
         x.append(stars.x)
         y.append(stars.y)
         
-        if plot == True:
-            if current_iter in [10*i for i in range(1, total_iter)]:
+        if snapshot:
+            if check_last_plot_time(solver.model_time, last_plot_time, t_end/snap_freq):
+                disk1 = set1[:n_halo]
                 plot_number += 1
+                last_plot_time = solver.model_time
                 make_plot_galstars(disk1, stars, 
                                    "MW and Solar System\nt = {} Myr".format(np.round(solver.model_time.value_in(units.Myr),
                                                                                      decimals=0)), 
-                                   script_path, 'galstars_' + str(plot_number).zfill(4))
+                                   'galstars_' + str(plot_number).zfill(4))
         
         current_iter +=1
         
@@ -769,12 +773,13 @@ def mw_and_stars(galaxy1, stars, galaxy_converter, star_solver, n_halo, t_end, s
         
     progress.finish()
     
+    """
     if plot == True:
         plot_number += 1
         make_plot_galstars(disk1, stars, 
                            "MW and Solar System\nt = {} Myr".format(t_end.value_in(units.Myr)), 
                            script_path, 'galstars_' + str(plot_number).zfill(4))
-    
+    """
     galaxy_dynamics_code.stop()
     if not leapfrog:
         star_dynamics_code.stop()

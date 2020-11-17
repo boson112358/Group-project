@@ -141,16 +141,16 @@ def plot_zoomed_merger(mw_disk, mw_bulge, m31_disk, m31_bulge, title, savepath, 
     ax.scatter(mw_disk.x.value_in(units.kpc), mw_disk.y.value_in(units.kpc),
                c='tab:blue', alpha=1, s=1, lw=0, label='mw')
     
-    #plotting stars
-    if particles != None:
-        ax.scatter(particles.x.value_in(units.kpc), particles.y.value_in(units.kpc),
-                   c='tab:black', alpha=1, marker='.', lw=1, label='solar system')
-    
     #plotting m31_halo and m31_disk
     ax.scatter(m31_bulge.x.value_in(units.kpc), m31_bulge.y.value_in(units.kpc),
                c='tab:orange', alpha=0.6, s=1, lw=0)
     ax.scatter(m31_disk.x.value_in(units.kpc), m31_disk.y.value_in(units.kpc),
                c='tab:orange', alpha=1, s=1, lw=0, label='m31')
+    
+    #plotting stars
+    if particles != None:
+        ax.scatter(particles.x.value_in(units.kpc), particles.y.value_in(units.kpc),
+                   c='tab:pink', alpha=1, marker='.', lw=1, label='solar system')
     
     plt.legend(loc='upper right')
     
@@ -204,12 +204,14 @@ def plot_mw_zoom(mw_galaxy, mw_disk, mw_bulge, m31_disk, m31_bulge, title, savep
     ax.set_aspect('equal')
     
     com = mw_galaxy.center_of_mass()
+    xcom = com.x.value_in(units.kpc)
+    ycom = com.y.value_in(units.kpc)
     
     plt.title(title)
     plt.xlabel(x_label)
     plt.ylabel(y_label)
-    plt.xlim(-60 + com, com + 60)
-    plt.ylim(-60 + com, com + 60)
+    plt.xlim(-60 + xcom, xcom + 60)
+    plt.ylim(-60 + ycom, ycom + 60)
 
     #plotting mw_halo and mw_disk
     ax.scatter(mw_disk.x.value_in(units.kpc), mw_disk.y.value_in(units.kpc),
@@ -217,16 +219,16 @@ def plot_mw_zoom(mw_galaxy, mw_disk, mw_bulge, m31_disk, m31_bulge, title, savep
     ax.scatter(mw_bulge.x.value_in(units.kpc), mw_bulge.y.value_in(units.kpc),
                c='tab:blue', alpha=1, s=1, lw=0, label='mw')
     
-    #plotting stars
-    if particles != None:
-        ax.scatter(particles.x.value_in(units.kpc), particles.y.value_in(units.kpc),
-                   c='tab:black', alpha=1, marker='.', lw=1, label='solar system')
-    
     #plotting m31_halo and m31_disk
     ax.scatter(m31_disk.x.value_in(units.kpc), m31_disk.y.value_in(units.kpc),
                c='tab:orange', alpha=1, s=1, lw=0)
     ax.scatter(m31_bulge.x.value_in(units.kpc), m31_bulge.y.value_in(units.kpc),
                c='tab:orange', alpha=1, s=1, lw=0, label='m31')
+    
+    #plotting stars
+    if particles != None:
+        ax.scatter(particles.x.value_in(units.kpc), particles.y.value_in(units.kpc),
+                   c='tab:pink', alpha=1, marker='.', lw=1, label='solar system')
     
     plt.legend(loc='upper right')
     
@@ -394,7 +396,7 @@ def plt_anim_wrapper(galaxy1, galaxy2, n_disk, n_bulge,
                          mw_zoom_dir, 
                          filename_prefix + '_mwzoomed_merger_' + str(current_snap_number).zfill(4),
                          particles=particles, 
-                         is_snapshot=is_snapshot, is_frame=animation):
+                         is_snapshot=is_snapshot, is_frame=animation)
         except:
             pass
             

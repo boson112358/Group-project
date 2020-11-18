@@ -546,7 +546,6 @@ def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter,
         
         if last_plot_time.value_in(units.Myr) > 3000:
             start_zoom_plot = True
-            print('Start plotting central zoom', flush=True)
         last_plot_time, last_snap_number = plt_anim_wrapper(set1, set2, n_disk, n_bulge, 
                                                             last_snap_number, dynamics_code.model_time, last_plot_time, 
                                                             'MW M31 merger', 

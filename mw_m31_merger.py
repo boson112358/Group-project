@@ -130,7 +130,7 @@ m31_parameters = {'name': 'm31_not_displaced',
 #simulation parameters
 scale_mass_galaxy = 1e12 | units.MSun
 scale_radius_galaxy = 80 | units.kpc
-t_end = 5000 | units.Myr
+t_end = 15000 | units.Myr
 t_step = 5. | units.Myr
 
 #Solar system starting conditions

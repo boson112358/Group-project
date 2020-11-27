@@ -36,11 +36,11 @@ if not os.path.exists(csv_folder):
 sim_plot_folder = SCRIPT_PATH + '/data/sim_plots/'
 if not os.path.exists(sim_plot_folder):
     os.makedirs(sim_plot_folder)
-"""
     
 #ignore warnings (AmuseWarning at end of simulation)
 import warnings
-#warnings.filterwarnings('ignore')
+warnings.filterwarnings('ignore')
+"""
 
 #defines parser for terminal usage
 import argparse
@@ -76,19 +76,27 @@ CORRECTION = args.correction
 from amuse.lab import units, Particles, nbody_system
 from amuse.ext.galactics_model import new_galactics_model
 
-#importing data analysis functions
+#importing own modules
 import modules.data_analysis as da
 import modules.galaxies as gal
 import modules.simulations as sim
 import modules.progressbar as pbar
 import modules.progressbar.widgets as pbwg
 
+#inspects imported modules
+import types
+def imports():
+    for name, val in globals().items():
+        if isinstance(val, types.ModuleType):
+            yield val.__name__
+            
+print([mod for mod in imports()])
 
 ###### initial conditions ######
 
 #simulation parameters
 t_end = 1000 | units.Myr
-t_step = 0.1 | units.Myr
+t_step = 0.5 | units.Myr
 
 #GalacICs output dir
 output_directory = '/data1/brentegani/'
@@ -174,14 +182,19 @@ else:
 
 ###### loading galaxy ######
 
+#ignores numpy errors
+#np.seterr(divide='ignore', invalid='ignore')
+
 glxy_name = glxy_param['name']
 
 converter = nbody_system.nbody_to_si(scale_mass_galaxy, scale_radius_galaxy)
 
 if GENERATION:
     glxy, glxy_path = gal.make_galaxy(glxy_param['n_halo'], converter, glxy_param['name'], test=True,
-                                      #output dir
+                                      #optional arguments
                                       output_directory = '/data1/brentegani/',
+                                      verbose = True,
+                                      do_scale = True,
                                       #halo parameters
                                       halo_scale_radius = glxy_param['halo_scale_radius'],
                                       #disk parameters
@@ -334,4 +347,4 @@ if SIMULATION:
     
     print('Simulating mw (t = {} Myr, step = {} Myr) ...'.format(t_end_int, t_step_int), flush=True)
     sim.simulate_single_galaxy(glxy, converter, n_halo, n_bulge, n_disk, t_end, glxy_path, 
-                               interval=t_step, plot=True, plot_freq=1000)
+                               interval=t_step, plot=True, plot_freq=500)

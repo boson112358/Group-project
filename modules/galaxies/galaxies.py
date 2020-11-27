@@ -11,6 +11,11 @@ import datetime
 
 from amuse.lab import units, Particles, write_set_to_file, read_set_from_file
 from amuse.ext.galactics_model import new_galactics_model
+from amuse.units import quantities
+
+#deletes current amuse quantities module and substitutes it with the new_quantities module
+#del sys.modules['amuse.units.quantities']
+#sys.modules['amuse.units.quantities'] = __import__('modules.new_quantities')
 
 
 ###### make model output dir ######
@@ -102,7 +107,6 @@ def make_galaxy(n_halo, converter, glxy_name, test=False, **kwargs):
     with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
         galaxy = new_galactics_model(n_halo,
                                      converter,
-                                     do_scale=True,
                                      **kwargs)
         
     out_path, current_model, tf = create_output_dir(glxy_name, test=test)

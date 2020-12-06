@@ -239,7 +239,7 @@ if not os.path.exists(folder):
 
 a = 8
 b = 9
-def solardistance(centermass, trakerpos,a,b):
+def solardistance(centermass, trakerpos,a,b,name):
     pyplot.figure()
     unity = 1| units.kpc**-2
     r = []
@@ -250,7 +250,7 @@ def solardistance(centermass, trakerpos,a,b):
     pyplot.xlabel('r')
     pyplot.ylabel('number')
     #savepath = '/Histograms/'
-    pyplot.savefig('./Histograms/histogram_0.png')
+    pyplot.savefig('./Histograms/histogram_'+str(name)+'.png')
     #print(r)
 
 #solardistance(mwc,Tracker.position,a,b)

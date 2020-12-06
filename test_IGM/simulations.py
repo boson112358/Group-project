@@ -905,7 +905,7 @@ def simulate_merger_IGM(galaxy1, galaxy2,sph_code, n_halo, n_disk, n_bulge, t_en
     mw_channel = dynamics_code.particles.new_channel_to(set1)
     m31_channel = dynamics_code.particles.new_channel_to(set2)
     igm_channel = dynamics_code.particles.new_channel_to(set3)
-    galaxy_distance = [] #use to determine the distance between center of mass
+    #galaxy_distance = [] #use to determine the distance between center of mass
 
     #moves the solar system particles
     if particles != None:
@@ -959,11 +959,15 @@ def simulate_merger_IGM(galaxy1, galaxy2,sph_code, n_halo, n_disk, n_bulge, t_en
                pbwg.Percentage(), ' - ', pbwg.ETA('ETA'), pbwg.EndMsg()]
     progress = pbar.ProgressBar(widgets=widgets, maxval=total_iter, fd=sys.stdout).start()
 
-    unity = 1 | units.m
+    #unity = 1 | units.m
+    #histime = [5.0 | units.Myr, 10.0 | units.Myr, 15.0 | units.Myr, 20.0 | units.Myr, 25.0 | units.Myr, 30.0 | units.Myr, 35.0 | units.Myr]
+    hisstep = 2 
+    #print(histime)
     while dynamics_code.model_time < t_end:
 
         current_iter +=1
-        distance = set1.center_of_mass()-set2.center_of_mass()
+        #dynamics_code.model_timedistance = set1.center_of_mass()-set2.center_of_mass()
+        print(dynamics_code.model_time.in_(units.Myr))
 
         
 
@@ -978,10 +982,11 @@ def simulate_merger_IGM(galaxy1, galaxy2,sph_code, n_halo, n_disk, n_bulge, t_en
         mw_channel.copy()
         m31_channel.copy()
         igm_channel.copy()
-        galaxy_distance.append([dynamics_code.model_time,math.sqrt((distance[0]/unity)**2+(distance[1]/unity)**2+(distance[2]/unity)**2)])
-        print(set1.center_of_mass().in_(units.kpc))
-        print(particles.position.in_(units.kpc))
-        his.solardistance(set1.center_of_mass().in_(units.kpc),particles.position.in_(units.kpc),0,200)#0 and 20 are the range in kpc of histogram,we cannt use it with
+        
+        #galaxy_distance.append([dynamics_code.model_time,math.sqrt((distance[0]/unity)**2+(distance[1]/unity)**2+(distance[2]/unity)**2)])
+        if current_iter/hisstep == math.floor(current_iter/hisstep):
+            print('test')
+            his.solardistance(set1.center_of_mass().in_(units.kpc),particles.position.in_(units.kpc),5,10,dynamics_code.model_time.in_(units.Myr))#0 and 20 are the range in kpc of histogram,we cannt use it with
         
         if last_plot_time.value_in(units.Myr) > 3000:
             start_zoom_plot = True

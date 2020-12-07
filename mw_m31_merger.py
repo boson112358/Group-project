@@ -14,7 +14,7 @@ import modules.galaxies as gal
 import modules.simulations as sim
 import modules.data_analysis as da
 import modules.solar_system as sol
-import modules.igmedium.IGM_density_distribution as igm
+import modules.igmedium as igm
 from modules.progressbar import progressbar as pbar
 from modules.progressbar import widgets as pbwg
 
@@ -39,9 +39,6 @@ parser.add_argument('--solar',
 parser.add_argument('--mwsolar', 
                     help='Simulates only the MW with the Solar System', 
                     action='store_true')
-parser.add_argument('--disk', 
-                    help='Add test disk to MW', 
-                    action='store_true')
 parser.add_argument('--igm', 
                     help='Add IGM', 
                     action='store_true')
@@ -51,9 +48,12 @@ parser.add_argument('--test',
 parser.add_argument('--nomerger', 
                     help='Stop after galaxy initialization', 
                     action='store_true')
-parser.add_argument('--correction', 
-                    help='Correct galaxy velocity and mass', 
-                    action='store_true')
+parser.add_argument('--radvel', 
+                    help='Value of the m31 radial velocity factor, default: 1', 
+                    nargs=1)
+parser.add_argument('--transvel', 
+                    help='Value of the m31 transverse velocity factor, default: 1', 
+                    nargs=1)
 parser.add_argument('-f', 
                     help='Foo value, defined for jupyter notebook compatibility')
 args = parser.parse_args()
@@ -63,11 +63,9 @@ ANIMATION = args.animation
 SNAPSHOT = args.snapshot
 SOLAR = args.solar
 MWSOLAR = args.mwsolar
-DISK = args.disk
 IGM = args.igm
 TEST = args.test
 NOMERGER = args.nomerger
-CORRECTION = args.correction
 
 if ANIMATION:
     print('Animations turned on', flush=True)
@@ -131,11 +129,11 @@ m31_parameters = {'name': 'm31_not_displaced',
 #simulation parameters
 scale_mass_galaxy = 1e12 | units.MSun
 scale_radius_galaxy = 80 | units.kpc
-t_end = 100 | units.Myr
+t_end = 15000 | units.Myr
 t_step = 5. | units.Myr
 
 #Solar system starting conditions
-n_stars = 50                                       #How many particles we will add
+n_stars = 1000                                       #How many particles we will add
 solar_radial_distance = 8.2
 solar_position = (-np.sqrt(0.5 * solar_radial_distance**2),
                   np.sqrt(0.5 * solar_radial_distance**2),
@@ -159,8 +157,17 @@ rotation = np.array([[0.7703,  0.3244,  0.5490],
 
 traslation = [-379.2, 612.7, 283.1] | units.kpc
 
-m31_radvel_factor = 0.6
-m31_transvel_factor = 0.25
+#parses the velocity factors
+if args.radvel == None:
+    m31_radvel_factor = 1.
+else:
+    m31_radvel_factor = float(args.radvel[0])
+    
+if args.transvel == None:
+    m31_transvel_factor = 1.
+else:
+    m31_transvel_factor = float(args.transvel[0])
+    
 radial_velocity =  m31_radvel_factor * 117 * np.array([0.4898, -0.7914, 0.3657]) | units.kms
 transverse_velocity = m31_transvel_factor * 42 * np.array([0.5236, 0.6024, 0.6024]) | units.kms
 
@@ -223,21 +230,10 @@ if NOMERGER:
     print('Quitting after galaxy initialization')
     quit()
 
-if CORRECTION:
-    print('Correcting velocities and mass: ...', flush=True)
-    vel_factor = 1/6.5
-    mass_factor = 1/1000
-
-    mw.velocity = mw.velocity * vel_factor
-    m31_not_displaced.velocity =  m31_not_displaced.velocity * vel_factor
-
-    mw.mass = mw.mass * mass_factor
-    m31_not_displaced.mass =  m31_not_displaced.mass * mass_factor
-
 
 ###### main ######
 
-if all(value == False for value in [MWSOLAR, DISK, IGM]):
+if all(value == False for value in [MWSOLAR, IGM]):
     m31 = gal.displace_galaxy(m31_not_displaced, rotation, traslation, radial_velocity, transverse_velocity)
     
     t_end_int = int(np.round(t_end.value_in(units.Myr), decimals=0))
@@ -257,14 +253,9 @@ if all(value == False for value in [MWSOLAR, DISK, IGM]):
         stars = None
         stars_solver = None
 
-    sim.simulate_merger_IGM(mw, m31, n_halo, n_disk, n_bulge, t_end, converter, 
-                            interval=5.|units.Myr, animation=ANIMATION, snapshot=SNAPSHOT, snap_freq=1000,
-                            particles=stars, particles_solver=stars_solver)
-    
-if DISK:
-    print('Simulating merger with disk test particles ...', flush=True)
-    test_disk = gal.test_particles(MW, n_halo, n_bulge, n_disk)
-    gal.simulate_merger_with_particles(M31, MW, converter, n_halo, n_bulge, n_disk, t_end, SCRIPT_PATH, plot=PLOT)
+    sim.simulate_merger(mw, m31, n_halo, n_disk, n_bulge, t_end, converter, 
+                        interval=5.|units.Myr, animation=ANIMATION, snapshot=SNAPSHOT, snap_freq=1000,
+                        particles=stars, particles_solver=stars_solver)
 
 if MWSOLAR:
     print('Simulating MW with solar system ...', flush=True)
@@ -288,6 +279,6 @@ if IGM:
         stars = None
         stars_solver = None
 
-    sim.simulate_merger_IGM(mw, m31, n_halo, n_disk, n_bulge, t_end, converter, 
-                            interval=5.|units.Myr, animation=ANIMATION, snapshot=SNAPSHOT, snap_freq=1000,
-                            particles=stars, particles_solver=stars_solver, sph_code=sph_code, Lg=Lg)
+    sim.simulate_merger(mw, m31, n_halo, n_disk, n_bulge, t_end, converter, 
+                        interval=5.|units.Myr, animation=ANIMATION, snapshot=SNAPSHOT, snap_freq=1000,
+                        particles=stars, particles_solver=stars_solver, sph_code=sph_code, Lg=Lg)

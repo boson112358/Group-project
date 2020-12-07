@@ -241,30 +241,6 @@ def plot_mw_zoom(mw_galaxy, mw_disk, mw_bulge, m31_disk, m31_bulge, title, savep
     if is_frame:
         framename = '_mwzoom_temp_frame'
         plt.savefig(__FRAME_DIR__ + framename)
-    
-    
-def make_plot_testdisk(disk1, disk2, test_disk, title, script_path, filename):
-    x_label = "X [kpc]"
-    y_label = "Y [kpc]"
-    
-    fig = plt.figure()
-    
-    plt.title(title)
-    plt.xlabel(x_label)
-    plt.ylabel(y_label)
-    plt.xlim(-300, 300)
-    plt.ylim(-300, 300)
-
-    plt.scatter(disk1.x.value_in(units.kpc), disk1.y.value_in(units.kpc),
-                   c='tab:blue', alpha=1, s=1, lw=0)
-    plt.scatter(disk2.x.value_in(units.kpc), disk2.y.value_in(units.kpc),
-                   c='tab:orange', alpha=1, s=1, lw=0)
-    plt.scatter(test_disk.x.value_in(units.kpc), test_disk.y.value_in(units.kpc),
-                   c='tab:green', alpha=1, s=1, lw=0)
-    
-    savepath = script_path + '/plots/'
-    
-    plt.savefig(savepath + filename)
 
     
 def make_plot_galstars(disk, bulge, stars, title, filename):
@@ -500,433 +476,11 @@ def solar_logs(solar_pos_list, particles, current_time):
 
     
 ###### merger function ######
-    
-def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter, 
-                    solver=Gadget2, interval=0.5|units.Myr, 
-                    animation=False, snapshot=False, snap_freq=5000,
-                    particles=None, particles_solver=None):
-    
-    #sets up the gravity solver
-    if particles == None:
-        dynamics_code = Gadget2(converter, number_of_workers=4)
-    else:
-        dynamics_code = Fi(converter, redirection='none', number_of_workers=1)
-    
-    #dynamics_code = solver(converter, number_of_workers=4)
-    dynamics_code.parameters.epsilon_squared = (100 | units.parsec)**2
-    
-    if isinstance(dynamics_code, Gadget2) or isinstance(dynamics_code, Fi):
-        #when using Gadget2 or Fi
-        set1 = dynamics_code.dm_particles.add_particles(galaxy1)
-        set2 = dynamics_code.dm_particles.add_particles(galaxy2)
-    elif isinstance(dynamics_code, BHTree):
-        #when using BHTree
-        set1 = dynamics_code.particles.add_particles(galaxy1)
-        set2 = dynamics_code.particles.add_particles(galaxy2)
-    
-    #computes coordinate difference between mw center of mass and solar system
-    if particles != None:
-        deltapos = set1.center_of_mass() - particles.position
-    
-    #moves system to center of mass and creates channels
-    dynamics_code.particles.move_to_center()
-    mw_channel = dynamics_code.particles.new_channel_to(set1)
-    m31_channel = dynamics_code.particles.new_channel_to(set2)
-    
-    #moves the solar system particles
-    if particles != None:
-        particles.position = set1.center_of_mass() - deltapos 
-        
-    if isinstance(dynamics_code, Gadget2):
-        dynamics_code.timestep = interval
-    elif isinstance(dynamics_code, Fi):
-        dynamics_code.parameters.timestep = interval
-        dynamics_code.update_particle_set()
-    
-    #creates output dirs
-    out_dir, current_merger = create_merger_output_dir()
-    diskbulge_merger_dir, contour_merger_dir, zoom_merger_dir, mw_zoom_dir = create_merger_subdirs(out_dir)
-    
-    if animation:
-        #initializes animations
-        animation_number = 1
-        last_anim_time = 0 | units.Myr
-        db_writer = GalaxyAnimWriter(current_merger + '_diskbulge_anim' + str(animation_number).zfill(2))
-        cr_writer = GalaxyAnimWriter(current_merger + '_contour_anim'+ str(animation_number).zfill(2))
-        zm_writer = GalaxyAnimWriter(current_merger + '_zoom_anim'+ str(animation_number).zfill(2))
-    else:
-        db_writer = None
-        cr_writer = None
-        zm_writer = None
-    
-    #initializes snapshots
-    start_zoom_plot = False
-    last_snap_number = 0
-    last_plot_time = 0 | units.Myr
-    current_time = 0 | units.Myr
-    _a, _b = plt_anim_wrapper(set1, set2, n_disk, n_bulge, 
-                              last_snap_number, current_time, last_plot_time, 'MW M31 merger', 
-                              diskbulge_merger_dir, contour_merger_dir, zoom_merger_dir, mw_zoom_dir,
-                              'mw_m31', t_end, 100000, particles=particles,
-                              animation=animation, snapshot=snapshot,
-                              diskbulge_writer=db_writer, contour_writer=cr_writer, zoom_writer=zm_writer,
-                              zoom=start_zoom_plot)
-    
-    #initializes separation
-    sep_list = [[], []]
-    sep_list = sep_logs(sep_list, separation(set1, set2).value_in(units.kpc), current_time.value_in(units.Myr))
-    
-    current_iter = 0
-    t_end_in_Myr = t_end.as_quantity_in(units.Myr)
-    total_iter = int(t_end_in_Myr/interval) + 1
-    
-    widgets = ['Step ', pbwg.SimpleProgress(), ' ',
-               pbwg.Bar(marker='=', tip='>', left='[', right=']', fill=' '), 
-               pbwg.Percentage(), ' - ', pbwg.ETA('ETA'), pbwg.EndMsg()]
-    progress = pbar.ProgressBar(widgets=widgets, maxval=total_iter, fd=sys.stdout).start()
-    
-    while dynamics_code.model_time < t_end:
-        
-        current_iter +=1
-        
-        dynamics_code.evolve_model(dynamics_code.model_time + interval)
-        if isinstance(dynamics_code, Fi):
-            dynamics_code.update_particle_set()
-            
-        if particles != None:
-            particles_solver(current_iter, particles, dynamics_code)
-            
-        mw_channel.copy()
-        m31_channel.copy()
-        
-        if last_plot_time.value_in(units.Myr) > 3000:
-            start_zoom_plot = True
-        last_plot_time, last_snap_number = plt_anim_wrapper(set1, set2, n_disk, n_bulge, 
-                                                            last_snap_number, dynamics_code.model_time, last_plot_time, 
-                                                            'MW M31 merger', 
-                                                            diskbulge_merger_dir, contour_merger_dir, 
-                                                            zoom_merger_dir, mw_zoom_dir,
-                                                            'mw_m31', t_end, snap_freq, particles=particles,
-                                                            animation=animation, snapshot=snapshot,
-                                                            diskbulge_writer=db_writer, contour_writer=cr_writer,
-                                                            zoom_writer=zm_writer, zoom=start_zoom_plot)
-        sep_list = sep_logs(sep_list, separation(set1, set2).value_in(units.kpc), 
-                            dynamics_code.model_time.value_in(units.Myr))
-        
-        if animation:
-            if close_animation(dynamics_code.model_time, last_anim_time):
-                db_writer.close()
-                cr_writer.close()
-                zm_writer.close()
-                animation_number += 1
-                last_anim_time = dynamics_code.model_time
-                db_writer = GalaxyAnimWriter(current_merger + '_diskbulge_anim' + str(animation_number).zfill(2))
-                cr_writer = GalaxyAnimWriter(current_merger + '_contour_anim'+ str(animation_number).zfill(2))
-                zm_writer = GalaxyAnimWriter(current_merger + '_zoom_anim'+ str(animation_number).zfill(2))
-        
-        progress.update(current_iter)
-        
-    progress.finish()
-    
-    """
-    _a, _b = plt_anim_wrapper(set1, set2, n_disk, n_bulge, 
-                              last_snap_number, t_end, last_plot_time - 2*interval, 'MW M31 merger', 
-                              diskbulge_merger_dir, contour_merger_dir, zoom_merger_dir, 
-                              'mw_m31', t_end, 100000, 
-                              animation=animation, snapshot=snapshot,
-                              diskbulge_writer=db_writer, contour_writer=cr_writer, zoom_writer=zm_writer,
-                              zoom=start_zoom_plot)
-    sep_list = sep_logs(sep_list, separation(set1, set2).value_in(units.kpc), 
-                            t_end.value_in(units.Myr))
-    """
-                            
-    dynamics_code.stop()
-    
-    #creates separation dictionary
-    sep_dict = {}
-    sep_dict.update({'time (Myr)': sep_list[0]})
-    sep_dict.update({'sep (kpc)': sep_list[1]})
-    df_sep = pd.DataFrame(sep_dict)
-    df_sep.to_csv('{}separation.csv'.format(out_dir), index=False)
-    
-    if animation:
-        db_writer.close()
-        cr_writer.close()
-        zm_writer.close()
-    
 
-def simulate_merger_with_particles(galaxy1, galaxy2, converter, n_halo, n_bulge, n_disk, t_end, script_path, plot=False):
-    converter = nbody_system.nbody_to_si(1.0e12|units.MSun, 100|units.kpc)
-    
-    dynamics_code = Fi(converter, redirection='none', number_of_workers=1)
-    dynamics_code.parameters.epsilon_squared = (100 | units.parsec)**2
-    set1 = dynamics_code.dm_particles.add_particles(galaxy1)
-    set2 = dynamics_code.dm_particles.add_particles(galaxy2)
-    
-    dynamics_code.particles.move_to_center()
-    
-    test_disk = test_particles(set2, n_halo, n_bulge, n_disk)
-    
-    test_code = Fi(converter, number_of_workers=1)
-    test_code.parameters.epsilon_squared = (100 | units.parsec)**2
-    set3 = test_code.dm_particles.add_particles(test_disk)
-    
-    gravity = bridge.Bridge(use_threading=False)
-    gravity.add_system(test_code, (dynamics_code,) )
-    gravity.timestep = 0.5 | units.Myr
-    
-    disk1 = set1[:n_halo]
-    disk2 = set2[:n_halo]
-    
-    if plot == True:
-        make_plot_testdisk(disk1, disk2, set3, script_path, "test_merger_t0")
-    
-    current_iter = 0
-    interval = 0.5 | units.Myr
-    total_iter = int(t_end/interval) + 1
-    
-    widgets = ['Step ', pbwg.SimpleProgress(), ' ',
-               pbwg.Bar(marker='=', tip='>', left='[', right=']', fill=' '), 
-               pbwg.Percentage(), ' - ', pbwg.ETA('ETA'), pbwg.EndMsg()]
-    progress = pbar.ProgressBar(widgets=widgets, maxval=total_iter, fd=sys.stdout).start()
-    
-    while gravity.model_time < t_end:
-        
-        current_iter +=1
-        
-        gravity.evolve_model(gravity.model_time + interval)
-                
-        progress.update(current_iter)
-        
-    progress.finish()
-    
-    if plot == True:
-        make_plot_testdisk(disk1, disk2, set3, script_path,
-                  "test_merger_t" + str(t_end.value_in(units.Myr))+"Myr")
-        
-    gravity.stop()
-    
-
-def merger_and_igm(galaxy1, galaxy2, converter, sph_code, n_halo, t_end, script_path, plot=False):
-    converter = nbody_system.nbody_to_si(1.0e12|units.MSun, 100|units.kpc)
-    
-    dynamics_code = Fi(converter, number_of_workers=4)
-    dynamics_code.parameters.epsilon_squared = (100 | units.parsec)**2
-    
-    set1 = dynamics_code.particles.add_particles(galaxy1)
-    set2 = dynamics_code.particles.add_particles(galaxy2)
-    
-    dynamics_code.particles.move_to_center()
-    
-    disk1 = set1[:n_halo]
-    disk2 = set2[:n_halo]
-    
-    if plot == True:
-        make_plot(disk1, disk2, script_path, "sph_merger_t0")
-    
-    current_iter = 0
-    interval = 0.5 | units.Myr
-    total_iter = int(t_end/interval) + 1
-    
-    gravity_sph = bridge.Bridge(use_threading=False)
-    gravity_sph.add_system(dynamics_code, (sph_code,) )
-    gravity_sph.add_system(sph_code, (dynamics_code,) )
-    gravity_sph.timestep = 0.5 | units.Myr
-    
-    widgets = ['Step ', pbwg.SimpleProgress(), ' ',
-               pbwg.Bar(marker='=', tip='>', left='[', right=']', fill=' '), 
-               pbwg.Percentage(), ' - ', pbwg.ETA('ETA'), pbwg.EndMsg()]
-    progress = pbar.ProgressBar(widgets=widgets, maxval=total_iter, fd=sys.stdout).start()
-    
-    while dynamics_code.model_time < t_end:
-        
-        current_iter +=1
-        
-        gravity_sph.evolve_model(gravity_sph.model_time + interval)
-                
-        progress.update(current_iter)
-        
-    progress.finish()
-    
-    if plot == True:
-        make_plot(disk1, disk2, script_path,
-                  "sph_merger_t" + str(t_end.value_in(units.Myr))+"Myr")
-        
-    gravity_sph.stop()
-    
-    
-###### single galaxy simulation ######
-
-def simulate_single_galaxy(galaxy1, converter, n_halo, n_bulge, n_disk, t_end, glxy_path,
-                           solver=Gadget2, interval=0.5|units.Myr, plot=False, plot_freq=100):
-    
-    if isinstance(solver, Gadget2):
-        nw = 4
-    elif isinstance(solver, Fi):
-        nw = 1
-        
-    dynamics_code = solver(converter, number_of_workers=4)
-    #dynamics_code = Fi(converter, redirection='none', number_of_workers=1)
-    dynamics_code.parameters.epsilon_squared = (100 | units.parsec)**2
-    
-    set1 = dynamics_code.dm_particles.add_particles(galaxy1)
-    
-    halo1 = set1[n_disk+n_bulge:]
-    bulge1 = set1[n_disk:n_disk+n_bulge]
-    disk1 = set1[:n_disk]
-    
-    dynamics_code.particles.move_to_center()
-    
-    if isinstance(dynamics_code, Gadget2):
-        dynamics_code.timestep = interval
-    elif isinstance(dynamics_code, Fi):
-        dynamics_code.parameters.timestep = interval
-        dynamics_code.update_particle_set()
-    
-    if plot == True:
-        plot_number = 0
-        last_plot_time = 0 | units.Myr
-        plot_single_galaxy(halo1, disk1, bulge1,
-             "TEST\nt = 0 Myr", 
-             glxy_path, 'mw_testrun_' + str(plot_number).zfill(4))
-    
-    current_iter = 0
-    t_end_in_Myr = t_end.as_quantity_in(units.Gyr)
-    total_iter = int(t_end_in_Myr/interval) + 10
-    
-    widgets = ['Step ', pbwg.SimpleProgress(), ' ',
-               pbwg.Bar(marker='=', tip='>', left='[', right=']', fill=' '), 
-               pbwg.Percentage(), ' - ', pbwg.ETA('ETA'), pbwg.EndMsg()]
-    progress = pbar.ProgressBar(widgets=widgets, maxval=total_iter, fd=sys.stdout).start()
-    
-    while dynamics_code.model_time < t_end:
-        
-        current_iter +=1
-        
-        dynamics_code.evolve_model(dynamics_code.model_time + interval)
-        
-        if isinstance(dynamics_code, Fi):
-            dynamics_code.update_particle_set()
-        
-        if plot == True:
-            if check_last_plot_time(dynamics_code.model_time, last_plot_time, t_end/plot_freq):
-                plot_number += 1
-                last_plot_time = dynamics_code.model_time
-                plot_single_galaxy(halo1, disk1, bulge1, 
-                             "TEST\nt = {} Myr".format(int(np.round(dynamics_code.model_time.value_in(units.Myr), 
-                                                                  decimals=0))),
-                             glxy_path, 'mw_testrun_' + str(plot_number).zfill(4))
-        
-        progress.update(current_iter)
-        
-    progress.finish()
-    
-    if plot == True:
-        plot_number += 1
-        plot_single_galaxy(halo1, disk1, bulge1,
-                     "TEST\nt = {} Myr".format(int(np.round(t_end.value_in(units.Myr), decimals=0))),                              
-                     glxy_path, 'mw_testrun_' + str(plot_number).zfill(4))
-        
-    dynamics_code.stop()
-
-def mw_and_stars(galaxy1, stars, converter, n_disk, n_bulge, t_end, star_solver,
-                 interval=1|units.Myr, snapshot=False, snap_freq=300):
-    
-    leapfrog = True
-    if isinstance(star_solver, (BHTree)):
-        leapfrog = False
-    
-    galaxy_dynamics_code = Fi(converter, redirection='none', number_of_workers=1)
-    galaxy_dynamics_code.parameters.epsilon_squared = (100 | units.parsec)**2
-    
-    set1 = galaxy_dynamics_code.dm_particles.add_particles(galaxy1)
-    mw_channel = galaxy_dynamics_code.particles.new_channel_to(set1)
-    galaxy_dynamics_code.particles.move_to_center()
-    #mw_channel.update()
-    
-    halo1, disk1, bulge1 = galaxy_structures(set1, n_disk, n_bulge)
-    
-    if leapfrog:
-        galaxy_dynamics_code.parameters.timestep = 0.5 | units.Myr
-        solver = galaxy_dynamics_code
-    else:
-        star_converter=nbody_system.nbody_to_si(stars.mass.sum(), 
-                                                stars.position.length())
-        star_dynamics_code = star_solver(star_converter)
-        star_dynamics_code.particles.add_particles(stars)
-        ch_g2l = star_dynamics_code.particles.new_channel_to(stars)
-    
-        gravity = bridge.Bridge(use_threading=False)
-        gravity.add_system(star_dynamics_code, (galaxy_dynamics_code,) )
-        gravity.timestep = 0.5 | units.Myr
-        solver = gravity
-    
-    if snapshot:
-        plot_number = 0
-        last_plot_time = 0 | units.Myr
-        make_plot_galstars(disk1, bulge1, stars, 
-                           "MW and Solar System\nt = 0 Myr", 
-                           'galstars_' + str(plot_number).zfill(4))
-        
-    x = [] | units.kpc
-    y = [] | units.kpc
-    
-    current_iter = 0
-    total_iter = int(t_end/interval) + 1
-    t_end_scalar = t_end.value_in(units.Myr)
-    
-    times = np.arange(0., t_end_scalar, interval.value_in(units.Myr)) | units.Myr
-    
-    widgets = ['Step ', pbwg.SimpleProgress(), ' ',
-               pbwg.Bar(marker='=', tip='>', left='[', right=']', fill=' '), 
-               pbwg.Percentage(), ' - ', pbwg.ETA('ETA'), pbwg.EndMsg()]
-    progress = pbar.ProgressBar(widgets=widgets, maxval=total_iter, fd=sys.stdout).start()
-    
-    for time in times:
-        
-        solver.evolve_model(time)
-        mw_channel.copy()
-        
-        if leapfrog:
-            star_solver(current_iter, stars, galaxy_dynamics_code)
-        else:
-            ch_g2l.copy()
-        
-        x.append(stars.x)
-        y.append(stars.y)
-        
-        if snapshot:
-            if check_last_plot_time(solver.model_time, last_plot_time, t_end/snap_freq):
-                halo1, disk1, bulge1 = galaxy_structures(set1, n_disk, n_bulge)
-                plot_number += 1
-                last_plot_time = solver.model_time
-                make_plot_galstars(disk1, bulge1, stars, 
-                                   "MW and Solar System\nt = {} Myr".format(np.round(solver.model_time.value_in(units.Myr),
-                                                                                     decimals=0)), 
-                                   'galstars_' + str(plot_number).zfill(4))
-        
-        current_iter +=1
-        
-        progress.update(current_iter)
-        
-    progress.finish()
-    
-    """
-    if plot == True:
-        plot_number += 1
-        make_plot_galstars(disk1, stars, 
-                           "MW and Solar System\nt = {} Myr".format(t_end.value_in(units.Myr)), 
-                           script_path, 'galstars_' + str(plot_number).zfill(4))
-    """
-    galaxy_dynamics_code.stop()
-    if not leapfrog:
-        star_dynamics_code.stop()
-        
-        
-def simulate_merger_IGM(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter,
-                        solver=Gadget2, interval=0.5|units.Myr,
-                        animation=False, snapshot=False, snap_freq=1000,
-                        particles=None, particles_solver=None, sph_code=None, Lg=0):
+def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter,
+                    solver=Gadget2, interval=0.5|units.Myr,
+                    animation=False, snapshot=False, snap_freq=1000,
+                    particles=None, particles_solver=None, sph_code=None, Lg=0):
 
     #sets up the gravity solver
     if particles == None:
@@ -1103,3 +657,307 @@ def simulate_merger_IGM(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, conver
         db_writer.close()
         cr_writer.close()
         zm_writer.close()
+
+
+"""
+def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter, 
+                    solver=Gadget2, interval=0.5|units.Myr, 
+                    animation=False, snapshot=False, snap_freq=5000,
+                    particles=None, particles_solver=None):
+    
+    #sets up the gravity solver
+    if particles == None:
+        dynamics_code = Gadget2(converter, number_of_workers=4)
+    else:
+        dynamics_code = Fi(converter, redirection='none', number_of_workers=1)
+    
+    #dynamics_code = solver(converter, number_of_workers=4)
+    dynamics_code.parameters.epsilon_squared = (100 | units.parsec)**2
+    
+    if isinstance(dynamics_code, Gadget2) or isinstance(dynamics_code, Fi):
+        #when using Gadget2 or Fi
+        set1 = dynamics_code.dm_particles.add_particles(galaxy1)
+        set2 = dynamics_code.dm_particles.add_particles(galaxy2)
+    elif isinstance(dynamics_code, BHTree):
+        #when using BHTree
+        set1 = dynamics_code.particles.add_particles(galaxy1)
+        set2 = dynamics_code.particles.add_particles(galaxy2)
+    
+    #computes coordinate difference between mw center of mass and solar system
+    if particles != None:
+        deltapos = set1.center_of_mass() - particles.position
+    
+    #moves system to center of mass and creates channels
+    dynamics_code.particles.move_to_center()
+    mw_channel = dynamics_code.particles.new_channel_to(set1)
+    m31_channel = dynamics_code.particles.new_channel_to(set2)
+    
+    #moves the solar system particles
+    if particles != None:
+        particles.position = set1.center_of_mass() - deltapos 
+        
+    if isinstance(dynamics_code, Gadget2):
+        dynamics_code.timestep = interval
+    elif isinstance(dynamics_code, Fi):
+        dynamics_code.parameters.timestep = interval
+        dynamics_code.update_particle_set()
+    
+    #creates output dirs
+    out_dir, current_merger = create_merger_output_dir()
+    diskbulge_merger_dir, contour_merger_dir, zoom_merger_dir, mw_zoom_dir = create_merger_subdirs(out_dir)
+    
+    if animation:
+        #initializes animations
+        animation_number = 1
+        last_anim_time = 0 | units.Myr
+        db_writer = GalaxyAnimWriter(current_merger + '_diskbulge_anim' + str(animation_number).zfill(2))
+        cr_writer = GalaxyAnimWriter(current_merger + '_contour_anim'+ str(animation_number).zfill(2))
+        zm_writer = GalaxyAnimWriter(current_merger + '_zoom_anim'+ str(animation_number).zfill(2))
+    else:
+        db_writer = None
+        cr_writer = None
+        zm_writer = None
+    
+    #initializes snapshots
+    start_zoom_plot = False
+    last_snap_number = 0
+    last_plot_time = 0 | units.Myr
+    current_time = 0 | units.Myr
+    _a, _b = plt_anim_wrapper(set1, set2, n_disk, n_bulge, 
+                              last_snap_number, current_time, last_plot_time, 'MW M31 merger', 
+                              diskbulge_merger_dir, contour_merger_dir, zoom_merger_dir, mw_zoom_dir,
+                              'mw_m31', t_end, 100000, particles=particles,
+                              animation=animation, snapshot=snapshot,
+                              diskbulge_writer=db_writer, contour_writer=cr_writer, zoom_writer=zm_writer,
+                              zoom=start_zoom_plot)
+    
+    #initializes separation
+    sep_list = [[], []]
+    sep_list = sep_logs(sep_list, separation(set1, set2).value_in(units.kpc), current_time.value_in(units.Myr))
+    
+    current_iter = 0
+    t_end_in_Myr = t_end.as_quantity_in(units.Myr)
+    total_iter = int(t_end_in_Myr/interval) + 1
+    
+    widgets = ['Step ', pbwg.SimpleProgress(), ' ',
+               pbwg.Bar(marker='=', tip='>', left='[', right=']', fill=' '), 
+               pbwg.Percentage(), ' - ', pbwg.ETA('ETA'), pbwg.EndMsg()]
+    progress = pbar.ProgressBar(widgets=widgets, maxval=total_iter, fd=sys.stdout).start()
+    
+    while dynamics_code.model_time < t_end:
+        
+        current_iter +=1
+        
+        dynamics_code.evolve_model(dynamics_code.model_time + interval)
+        if isinstance(dynamics_code, Fi):
+            dynamics_code.update_particle_set()
+            
+        if particles != None:
+            particles_solver(current_iter, particles, dynamics_code)
+            
+        mw_channel.copy()
+        m31_channel.copy()
+        
+        if last_plot_time.value_in(units.Myr) > 3000:
+            start_zoom_plot = True
+        last_plot_time, last_snap_number = plt_anim_wrapper(set1, set2, n_disk, n_bulge, 
+                                                            last_snap_number, dynamics_code.model_time, last_plot_time, 
+                                                            'MW M31 merger', 
+                                                            diskbulge_merger_dir, contour_merger_dir, 
+                                                            zoom_merger_dir, mw_zoom_dir,
+                                                            'mw_m31', t_end, snap_freq, particles=particles,
+                                                            animation=animation, snapshot=snapshot,
+                                                            diskbulge_writer=db_writer, contour_writer=cr_writer,
+                                                            zoom_writer=zm_writer, zoom=start_zoom_plot)
+        sep_list = sep_logs(sep_list, separation(set1, set2).value_in(units.kpc), 
+                            dynamics_code.model_time.value_in(units.Myr))
+        
+        if animation:
+            if close_animation(dynamics_code.model_time, last_anim_time):
+                db_writer.close()
+                cr_writer.close()
+                zm_writer.close()
+                animation_number += 1
+                last_anim_time = dynamics_code.model_time
+                db_writer = GalaxyAnimWriter(current_merger + '_diskbulge_anim' + str(animation_number).zfill(2))
+                cr_writer = GalaxyAnimWriter(current_merger + '_contour_anim'+ str(animation_number).zfill(2))
+                zm_writer = GalaxyAnimWriter(current_merger + '_zoom_anim'+ str(animation_number).zfill(2))
+        
+        progress.update(current_iter)
+        
+    progress.finish()       
+    dynamics_code.stop()
+    
+    #creates separation dictionary
+    sep_dict = {}
+    sep_dict.update({'time (Myr)': sep_list[0]})
+    sep_dict.update({'sep (kpc)': sep_list[1]})
+    df_sep = pd.DataFrame(sep_dict)
+    df_sep.to_csv('{}separation.csv'.format(out_dir), index=False)
+    
+    if animation:
+        db_writer.close()
+        cr_writer.close()
+        zm_writer.close()    
+"""
+
+
+###### single galaxy simulation ######
+
+def simulate_single_galaxy(galaxy1, converter, n_halo, n_bulge, n_disk, t_end, glxy_path,
+                           solver=Gadget2, interval=0.5|units.Myr, plot=False, plot_freq=100):
+    
+    if isinstance(solver, Gadget2):
+        nw = 4
+    elif isinstance(solver, Fi):
+        nw = 1
+        
+    dynamics_code = solver(converter, number_of_workers=4)
+    #dynamics_code = Fi(converter, redirection='none', number_of_workers=1)
+    dynamics_code.parameters.epsilon_squared = (100 | units.parsec)**2
+    
+    set1 = dynamics_code.dm_particles.add_particles(galaxy1)
+    
+    halo1 = set1[n_disk+n_bulge:]
+    bulge1 = set1[n_disk:n_disk+n_bulge]
+    disk1 = set1[:n_disk]
+    
+    dynamics_code.particles.move_to_center()
+    
+    if isinstance(dynamics_code, Gadget2):
+        dynamics_code.timestep = interval
+    elif isinstance(dynamics_code, Fi):
+        dynamics_code.parameters.timestep = interval
+        dynamics_code.update_particle_set()
+    
+    if plot == True:
+        plot_number = 0
+        last_plot_time = 0 | units.Myr
+        plot_single_galaxy(halo1, disk1, bulge1,
+             "TEST\nt = 0 Myr", 
+             glxy_path, 'mw_testrun_' + str(plot_number).zfill(4))
+    
+    current_iter = 0
+    t_end_in_Myr = t_end.as_quantity_in(units.Gyr)
+    total_iter = int(t_end_in_Myr/interval) + 10
+    
+    widgets = ['Step ', pbwg.SimpleProgress(), ' ',
+               pbwg.Bar(marker='=', tip='>', left='[', right=']', fill=' '), 
+               pbwg.Percentage(), ' - ', pbwg.ETA('ETA'), pbwg.EndMsg()]
+    progress = pbar.ProgressBar(widgets=widgets, maxval=total_iter, fd=sys.stdout).start()
+    
+    while dynamics_code.model_time < t_end:
+        
+        current_iter +=1
+        
+        dynamics_code.evolve_model(dynamics_code.model_time + interval)
+        
+        if isinstance(dynamics_code, Fi):
+            dynamics_code.update_particle_set()
+        
+        if plot == True:
+            if check_last_plot_time(dynamics_code.model_time, last_plot_time, t_end/plot_freq):
+                plot_number += 1
+                last_plot_time = dynamics_code.model_time
+                plot_single_galaxy(halo1, disk1, bulge1, 
+                             "TEST\nt = {} Myr".format(int(np.round(dynamics_code.model_time.value_in(units.Myr), 
+                                                                  decimals=0))),
+                             glxy_path, 'mw_testrun_' + str(plot_number).zfill(4))
+        
+        progress.update(current_iter)
+        
+    progress.finish()
+    
+    if plot == True:
+        plot_number += 1
+        plot_single_galaxy(halo1, disk1, bulge1,
+                     "TEST\nt = {} Myr".format(int(np.round(t_end.value_in(units.Myr), decimals=0))),                              
+                     glxy_path, 'mw_testrun_' + str(plot_number).zfill(4))
+        
+    dynamics_code.stop()
+
+def mw_and_stars(galaxy1, stars, converter, n_disk, n_bulge, t_end, star_solver,
+                 interval=1|units.Myr, snapshot=False, snap_freq=300):
+    
+    leapfrog = True
+    if isinstance(star_solver, (BHTree)):
+        leapfrog = False
+    
+    galaxy_dynamics_code = Fi(converter, redirection='none', number_of_workers=1)
+    galaxy_dynamics_code.parameters.epsilon_squared = (100 | units.parsec)**2
+    
+    set1 = galaxy_dynamics_code.dm_particles.add_particles(galaxy1)
+    mw_channel = galaxy_dynamics_code.particles.new_channel_to(set1)
+    galaxy_dynamics_code.particles.move_to_center()
+    #mw_channel.update()
+    
+    halo1, disk1, bulge1 = galaxy_structures(set1, n_disk, n_bulge)
+    
+    if leapfrog:
+        galaxy_dynamics_code.parameters.timestep = 0.5 | units.Myr
+        solver = galaxy_dynamics_code
+    else:
+        star_converter=nbody_system.nbody_to_si(stars.mass.sum(), 
+                                                stars.position.length())
+        star_dynamics_code = star_solver(star_converter)
+        star_dynamics_code.particles.add_particles(stars)
+        ch_g2l = star_dynamics_code.particles.new_channel_to(stars)
+    
+        gravity = bridge.Bridge(use_threading=False)
+        gravity.add_system(star_dynamics_code, (galaxy_dynamics_code,) )
+        gravity.timestep = 0.5 | units.Myr
+        solver = gravity
+    
+    if snapshot:
+        plot_number = 0
+        last_plot_time = 0 | units.Myr
+        make_plot_galstars(disk1, bulge1, stars, 
+                           "MW and Solar System\nt = 0 Myr", 
+                           'galstars_' + str(plot_number).zfill(4))
+        
+    x = [] | units.kpc
+    y = [] | units.kpc
+    
+    current_iter = 0
+    total_iter = int(t_end/interval) + 1
+    t_end_scalar = t_end.value_in(units.Myr)
+    
+    times = np.arange(0., t_end_scalar, interval.value_in(units.Myr)) | units.Myr
+    
+    widgets = ['Step ', pbwg.SimpleProgress(), ' ',
+               pbwg.Bar(marker='=', tip='>', left='[', right=']', fill=' '), 
+               pbwg.Percentage(), ' - ', pbwg.ETA('ETA'), pbwg.EndMsg()]
+    progress = pbar.ProgressBar(widgets=widgets, maxval=total_iter, fd=sys.stdout).start()
+    
+    for time in times:
+        
+        solver.evolve_model(time)
+        mw_channel.copy()
+        
+        if leapfrog:
+            star_solver(current_iter, stars, galaxy_dynamics_code)
+        else:
+            ch_g2l.copy()
+        
+        x.append(stars.x)
+        y.append(stars.y)
+        
+        if snapshot:
+            if check_last_plot_time(solver.model_time, last_plot_time, t_end/snap_freq):
+                halo1, disk1, bulge1 = galaxy_structures(set1, n_disk, n_bulge)
+                plot_number += 1
+                last_plot_time = solver.model_time
+                make_plot_galstars(disk1, bulge1, stars, 
+                                   "MW and Solar System\nt = {} Myr".format(np.round(solver.model_time.value_in(units.Myr),
+                                                                                     decimals=0)), 
+                                   'galstars_' + str(plot_number).zfill(4))
+        
+        current_iter +=1
+        
+        progress.update(current_iter)
+        
+    progress.finish()
+    
+    galaxy_dynamics_code.stop()
+    if not leapfrog:
+        star_dynamics_code.stop()

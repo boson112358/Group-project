@@ -21,7 +21,7 @@ def create_model_analysis_dirs(glxy_path):
     dirs = [plot_dir, csv_dir]
     for direct in dirs:
         if not os.path.exists(direct):
-            os.makedirs(direct)
+            os.makedirs(direct, exist_ok=True)
             
     return plot_dir, csv_dir
 

@@ -34,7 +34,7 @@ def create_output_dir(glxy_name, test):
         current_model = glxy_name + tf + str(datetime.date.today()) + '-' + str(increasing).zfill(4)
         out_dir = parent + current_model + '/'
         if not os.path.exists(out_dir):
-            os.makedirs(out_dir)
+            os.makedirs(out_dir, exist_ok=True)
             break
         else:
             increasing += 1

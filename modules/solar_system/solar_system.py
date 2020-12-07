@@ -1,9 +1,13 @@
-from modules import *
+###### importing modules ######
 
 import random
 import math
+import matplotlib.pyplot as plt
 
 from amuse.lab import Particles, units, Fi
+
+
+###### solar system trackers initialization ######
 
 #Here we define the track particles with some values which can change their location and radius of distribution
 
@@ -43,6 +47,8 @@ def make_solar_system(N, solar_position, system_radius, galaxy_velocity, solar_t
     return particles
 
 
+###### leapfrog function ######
+
 def leapfrog_alg(current_iteration, particles, galaxy_solver):
     """
     here we define a leapfrog integration method for the tracker particles 
@@ -74,4 +80,20 @@ def leapfrog_alg(current_iteration, particles, galaxy_solver):
             tstep_factor = 1
 
         body.velocity = body.velocity + accel_out * galaxy_solver.parameters.timestep * tstep_factor
-        body.position = body.position + body.velocity * galaxy_solver.parameters.timestep * tstep_factor 
+        body.position = body.position + body.velocity * galaxy_solver.parameters.timestep * tstep_factor
+        
+
+###### histogram function ######
+        
+def solar_histogram(centermass, trakerpos, output_dir, filename, a=8, b=9):
+    fig = plt.figure()
+    ax = fig.add_subplots(111)
+    unity = 1 | units.kpc**-2
+    r = []
+    for pos in trakerpos:
+        d = centermass - pos
+        r.append((math.sqrt((d[0]**2 + d[1]**2 + d[2]**2)*unity)))
+    ax.hist(r, bins=100, histtype='step', range=(a,b))
+    ax.set_xlabel('r')
+    ax.set_ylabel('number')
+    plt.savefig(output_dir + filename)

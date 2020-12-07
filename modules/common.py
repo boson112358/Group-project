@@ -29,7 +29,7 @@ __global_dirs__ = [__DATA_DIR__ ,
                    
 for direct in __global_dirs__:
     if not os.path.exists(direct):
-        os.makedirs(direct)
+        os.makedirs(direct, exist_ok=True)
         
 def galaxy_structures(galaxy, n_disk, n_bulge, n_halo=None):
     halo = galaxy[n_disk+n_bulge:]

@@ -14,10 +14,11 @@ import modules.galaxies as gal
 import modules.simulations as sim
 import modules.data_analysis as da
 import modules.solar_system as sol
+import modules.igmedium.IGM_density_distribution as igm
 from modules.progressbar import progressbar as pbar
 from modules.progressbar import widgets as pbwg
 
-from amuse.lab import units, Particles, nbody_system, read_set_from_file
+from amuse.lab import units, Particles, nbody_system, read_set_from_file, Fi
 
 
 ###### parser for terminal usage ######
@@ -130,7 +131,7 @@ m31_parameters = {'name': 'm31_not_displaced',
 #simulation parameters
 scale_mass_galaxy = 1e12 | units.MSun
 scale_radius_galaxy = 80 | units.kpc
-t_end = 15000 | units.Myr
+t_end = 100 | units.Myr
 t_step = 5. | units.Myr
 
 #Solar system starting conditions
@@ -144,11 +145,12 @@ solar_tang_velocity = 220 | (units.km/units.s)     #This is roughly the velocity
 mw_velocity_vector = (0, 0, 0) | units.kms
 
 #Intergal medium starting conditions
-N1 = 5000
-N2 = 1000
-L = 10 | units.kpc
-rho = 1000 | units.MSun / (units.kpc)**3
-u = 1.6e+15 | (units.m)**2 / (units.s)**2
+N1 = 70000
+N2 = 70000
+L = 1000 | units.kpc
+Lg = 1000
+rho = 770 | units.MSun / (units.kpc)**3
+u = 3.724e+9 | (units.m)**2 / (units.s)**2
 
 #M31 displacement
 rotation = np.array([[0.7703,  0.3244,  0.5490],
@@ -255,9 +257,9 @@ if all(value == False for value in [MWSOLAR, DISK, IGM]):
         stars = None
         stars_solver = None
 
-    sim.simulate_merger(mw, m31, n_halo, n_disk, n_bulge, t_end, converter, 
-                        interval=5.|units.Myr, animation=ANIMATION, snapshot=SNAPSHOT, snap_freq=1000,
-                        particles=stars, particles_solver=stars_solver)
+    sim.simulate_merger_IGM(mw, m31, n_halo, n_disk, n_bulge, t_end, converter, 
+                            interval=5.|units.Myr, animation=ANIMATION, snapshot=SNAPSHOT, snap_freq=1000,
+                            particles=stars, particles_solver=stars_solver)
     
 if DISK:
     print('Simulating merger with disk test particles ...', flush=True)
@@ -271,10 +273,21 @@ if MWSOLAR:
     sim.mw_and_stars(mw, stars, converter, n_disk, n_bulge, t_end, sol.leapfrog_alg, snapshot=SNAPSHOT)
 
 if IGM:
+    m31 = gal.displace_galaxy(m31_not_displaced, rotation, traslation, radial_velocity, transverse_velocity)
     print('Simulating merger with IGM ...', flush=True)
     widgets = ['Building IGM: ', pbwg.AnimatedMarker(), ' ',
                pbwg.Timer(), pbwg.EndMsg()]
     with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
-        sph_code = igm.setup_sph_code(Gadget2, N1, N2, L, rho, u)
+        sph_code = igm.setup_sph_code(Fi, N1, N2, L, rho, u)
+    
+    if SOLAR:
+        print('Adding Solar System (n = {}) ...'.format(n_stars), flush=True)
+        stars = sol.make_solar_system(n_stars, solar_position, system_radius, mw_velocity_vector, solar_tang_velocity)
+        stars_solver = sol.leapfrog_alg
+    else:
+        stars = None
+        stars_solver = None
 
-    gal.merger_and_igm(galaxy1, galaxy2, converter, sph_code, n_halo, t_end, SCRIPT_PATH, plot=PLOT)
+    sim.simulate_merger_IGM(mw, m31, n_halo, n_disk, n_bulge, t_end, converter, 
+                            interval=5.|units.Myr, animation=ANIMATION, snapshot=SNAPSHOT, snap_freq=1000,
+                            particles=stars, particles_solver=stars_solver, sph_code=sph_code, Lg=Lg)

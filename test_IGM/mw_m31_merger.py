@@ -279,13 +279,10 @@ if MWSOLAR:
 if IGM:
     m31 = gal.displace_galaxy(m31_not_displaced, rotation, traslation, radial_velocity, transverse_velocity)
     print('Simulating merger with IGM ...', flush=True)
-    print(mw.center_of_mass())
-    print(m31.center_of_mass())
     widgets = ['Building IGM: ', pbwg.AnimatedMarker(), ' ',
                pbwg.Timer(), pbwg.EndMsg()]
     with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
         sph_code = igm.setup_sph_code(Fi, N1, N2, L, rho, u)
-    igm.plot_igm(500,Lg,'IGM_density_0')
     
     if SOLAR:
         print('Adding Solar System (n = {}) ...'.format(n_stars), flush=True)
@@ -296,8 +293,6 @@ if IGM:
         stars_solver = None
 
     sim.simulate_merger_IGM(mw, m31,sph_code, n_halo, n_disk, n_bulge, t_end, converter,
-                    solver=Gadget2, interval=5|units.Myr,
-                    animation=ANIMATION, snapshot=SNAPSHOT, snap_freq=5000,
-                    particles=stars, particles_solver=stars_solver)
-    igm.plot_igm(500,Lg,'IGM_density_finished_0')
-
+                            solver=Gadget2, interval=5|units.Myr,
+                            animation=ANIMATION, snapshot=SNAPSHOT, snap_freq=5000,
+                            particles=stars, particles_solver=stars_solver, sph_code=sph_code, Lg=Lg)

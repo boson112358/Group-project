@@ -15,10 +15,11 @@ import modules.simulations as sim
 import modules.data_analysis as da
 import modules.solar_system as sol
 import modules.igmedium as igm
+from modules.g2extension import Gadget2Gravity
 from modules.progressbar import progressbar as pbar
 from modules.progressbar import widgets as pbwg
 
-from amuse.lab import units, Particles, nbody_system, read_set_from_file, Fi
+from amuse.lab import units, Particles, nbody_system, read_set_from_file, Fi, Gadget2
 
 
 ###### parser for terminal usage ######
@@ -53,6 +54,12 @@ parser.add_argument('--radvel',
                     nargs=1)
 parser.add_argument('--transvel', 
                     help='Value of the m31 transverse velocity factor, default: 1', 
+                    nargs=1)
+parser.add_argument('--timefinal', 
+                    help='End time of the simulation, units are in Myr, default: 15000', 
+                    nargs=1)
+parser.add_argument('--timestep', 
+                    help='Timestep of the simulation, units are in Myr, default: 5', 
                     nargs=1)
 parser.add_argument('-f', 
                     help='Foo value, defined for jupyter notebook compatibility')
@@ -129,8 +136,17 @@ m31_parameters = {'name': 'm31_not_displaced',
 #simulation parameters
 scale_mass_galaxy = 1e12 | units.MSun
 scale_radius_galaxy = 80 | units.kpc
-t_end = 15000 | units.Myr
-t_step = 5. | units.Myr
+
+#parses the simulation times
+if args.timefinal == None:
+    t_end = 15000 | units.Myr
+else:
+    t_end = float(args.timefinal[0]) | units.Myr
+    
+if args.timestep == None:
+    t_step = 5. | units.Myr
+else:
+    t_step = float(args.timestep[0]) | units.Myr
 
 #Solar system starting conditions
 n_stars = 1000                                       #How many particles we will add
@@ -143,10 +159,10 @@ solar_tang_velocity = 220 | (units.km/units.s)     #This is roughly the velocity
 mw_velocity_vector = (0, 0, 0) | units.kms
 
 #Intergal medium starting conditions
-N1 = 70000
-N2 = 70000
-L = 1000 | units.kpc
-Lg = 1000
+N1 = n_bulge + n_disk + n_halo
+N2 = n_bulge + n_disk + n_halo
+box_side = 1000 | units.kpc
+box_grid = box_side.value_in(units.kpc)
 rho = 770 | units.MSun / (units.kpc)**3
 u = 3.724e+9 | (units.m)**2 / (units.s)**2
 
@@ -233,52 +249,45 @@ if NOMERGER:
 
 ###### main ######
 
-if all(value == False for value in [MWSOLAR, IGM]):
+if not MWSOLAR:
     m31 = gal.displace_galaxy(m31_not_displaced, rotation, traslation, radial_velocity, transverse_velocity)
-    
+
     t_end_int = int(np.round(t_end.value_in(units.Myr), decimals=0))
     t_step_int = int(np.round(t_step.value_in(units.Myr), decimals=0))
-    txt_line1 = 'Simulating merger with no additional components:\n'
+
+    if IGM:
+        txt_line1 = 'Simulating merger with IGM\n'
+        widgets = ['Building IGM: ', pbwg.AnimatedMarker(), ' ',
+                   pbwg.Timer(), pbwg.EndMsg()]
+        with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
+            igm_gas, igm_dm = igm.setup_sph_code(N1, N2, box_side, rho, u)
+    else:
+        igm_gas = None
+        igm_dm = None
+
+    if SOLAR:
+        txt_line1 = 'Simulating merger with Solar System (n = {})\n'.format(n_stars)
+        stars = sol.make_solar_system(n_stars, solar_position, system_radius, mw_velocity_vector, solar_tang_velocity)
+    else:
+        txt_line1 = 'Simulating merger with no additional components:\n'
+        stars = None
+
+    if SOLAR and IGM:
+        txt_line1 = 'Simulating merger with IGM and Solar System (n = {})\n'.format(n_stars)
+
     txt_line2 = 't = {} Myr, t step = {}\n'.format(t_end_int, t_step_int)
     txt_line3 = 'MW mass = {}, M31 mass = {}\n'.format(mw_mass, m31_mass)
     txt_line4 = 'm31 radial velocity factor = {} * 117\n'.format(m31_radvel_factor)
     txt_line5 = 'm31 transverse velocity factor = {} * 42'.format(m31_transvel_factor)
     print(txt_line1 + txt_line2 + txt_line3 + txt_line4 + txt_line5, flush=True)
-    
-    if SOLAR:
-        print('Adding Solar System (n = {}) ...'.format(n_stars), flush=True)
-        stars = sol.make_solar_system(n_stars, solar_position, system_radius, mw_velocity_vector, solar_tang_velocity)
-        stars_solver = sol.leapfrog_alg
-    else:
-        stars = None
-        stars_solver = None
 
-    sim.simulate_merger(mw, m31, n_halo, n_disk, n_bulge, t_end, converter, 
-                        interval=5.|units.Myr, animation=ANIMATION, snapshot=SNAPSHOT, snap_freq=1000,
-                        particles=stars, particles_solver=stars_solver)
-
-if MWSOLAR:
+    sim.simulate_merger(mw, m31, n_halo, n_disk, n_bulge, t_end, converter, Gadget2Gravity,
+                        interval=5.|units.Myr, 
+                        animation=ANIMATION, snapshot=SNAPSHOT, snap_freq=1000,
+                        sol_system=stars,  
+                        igm_gas_particles=igm_gas, igm_dm_particles=igm_dm, box_grid=box_grid)
+else:
     print('Simulating MW with solar system ...', flush=True)
     mw_velocity_vector = (0, 0, 0) | units.kms
     stars = sol.make_solar_system(n_stars, solar_position, system_radius, mw_velocity_vector, solar_tang_velocity)
     sim.mw_and_stars(mw, stars, converter, n_disk, n_bulge, t_end, sol.leapfrog_alg, snapshot=SNAPSHOT)
-
-if IGM:
-    m31 = gal.displace_galaxy(m31_not_displaced, rotation, traslation, radial_velocity, transverse_velocity)
-    print('Simulating merger with IGM ...', flush=True)
-    widgets = ['Building IGM: ', pbwg.AnimatedMarker(), ' ',
-               pbwg.Timer(), pbwg.EndMsg()]
-    with pbar.ProgressBar(widgets=widgets, fd=sys.stdout) as progress:
-        sph_code = igm.setup_sph_code(Fi, N1, N2, L, rho, u)
-    
-    if SOLAR:
-        print('Adding Solar System (n = {}) ...'.format(n_stars), flush=True)
-        stars = sol.make_solar_system(n_stars, solar_position, system_radius, mw_velocity_vector, solar_tang_velocity)
-        stars_solver = sol.leapfrog_alg
-    else:
-        stars = None
-        stars_solver = None
-
-    sim.simulate_merger(mw, m31, n_halo, n_disk, n_bulge, t_end, converter, 
-                        interval=5.|units.Myr, animation=ANIMATION, snapshot=SNAPSHOT, snap_freq=1000,
-                        particles=stars, particles_solver=stars_solver, sph_code=sph_code, Lg=Lg)

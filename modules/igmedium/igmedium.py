@@ -9,10 +9,10 @@ from modules.common import __SCRIPT_PATH__, __MERGER_DIR__
 
 ###### setting up igm ######
 
-def setup_sph_code(sph_code, N1, N2, L, rho, u):
+def setup_sph_code(N1, N2, L, rho, u):
     #rho -- local group density
-    converter = nbody_system.nbody_to_si(1 | units.MSun, 1 | units.kpc)
-    sph_code = sph_code(converter)#, mode = 'periodic')#, redirection = 'none')#change periodic
+    #converter = nbody_system.nbody_to_si(1 | units.MSun, 1 | units.kpc)
+    #sph_code = sph_code(converter)#, mode = 'periodic')#, redirection = 'none')#change periodic
     #sph_code.parameters.periodic_box_size = 10.0 | units.kpc
     dm = Particles(N1)
     dm.mass = 0.8*(rho * L**3) / N1
@@ -31,20 +31,15 @@ def setup_sph_code(sph_code, N1, N2, L, rho, u):
     gas.vx = np.zeros(N2) | units.km / units.s
     gas.vy = np.zeros(N2) | units.km / units.s
     gas.vz = np.zeros(N2) | units.km / units.s
-    gas.u = u 
-    
-    if isinstance(sph_code, Fi):
-        sph_code.parameters.self_gravity_flag = True
-        sph_code.parameters.timestep = 0.1 | units.Myr
-        gas.h_smooth = L / N2**(1/3.0)
-        dm.h_smooth = L / N1**(1/3.0)
-        #gas.position -= 0.5 * L
+    gas.u = u
+    gas.h_smooth = L / N2**(1/3.0)
+    dm.h_smooth = L / N1**(1/3.0)
         
-    sph_code.gas_particles.add_particles(gas)
-    sph_code.dm_particles.add_particles(dm)
-    sph_code.commit_particles()
+    #sph_code.gas_particles.add_particles(gas)
+    #sph_code.dm_particles.add_particles(dm)
+    #sph_code.commit_particles()
     
-    return sph_code
+    return gas, dm
 
 
 ###### setting up grid ######

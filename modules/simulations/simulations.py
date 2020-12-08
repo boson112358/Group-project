@@ -185,7 +185,7 @@ def plot_contour_merger(galaxy1, galaxy2, title, savepath, filename,
     plt.ylabel(y_label)
     
     cont = ax.contourf(counts, norm=LogNorm(), levels=[1e-1, 1, 10, 100, 1e3, 1e4, 1e5],
-                       extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()], cmap='RdGy')
+                       extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()], cmap='cool')
     
     cbar = plt.colorbar(cont)
     cbar.set_label('Density')
@@ -241,7 +241,24 @@ def plot_mw_zoom(mw_galaxy, mw_disk, mw_bulge, m31_disk, m31_bulge, title, savep
     if is_frame:
         framename = '_mwzoom_temp_frame'
         plt.savefig(__FRAME_DIR__ + framename)
-
+        
+        
+def solar_plot(particles, is_snapshot=True):
+    x_label = "X [kpc]"
+    y_label = "Y [kpc]"
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.set_aspect('equal')
+    plt.title('sol_test')
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.xlim(-10, 10)
+    plt.ylim(-10, 10)
+    ax.scatter(particles.x.value_in(units.kpc), particles.y.value_in(units.kpc),
+                   c='tab:pink', alpha=1, marker='.', lw=5, label='solar system')
+    plt.legend(loc='upper right')
+    if is_snapshot:
+        plt.savefig(__MERGER_DIR__ + 'sol_test')
     
 def make_plot_galstars(disk, bulge, stars, title, filename):
     x_label = "X [kpc]"
@@ -379,6 +396,8 @@ def plt_anim_wrapper(galaxy1, galaxy2, n_disk, n_bulge,
                          is_snapshot=is_snapshot, is_frame=animation)
         except:
             pass
+        
+    #solar_plot(particles)
             
     plt.close('all')
     
@@ -391,7 +410,7 @@ def plt_anim_wrapper(galaxy1, galaxy2, n_disk, n_bulge,
 ###### igm plot function ######
 
 def plot_igm(sph_code, Ngrid, Lg, output_dir, filename):
-    x, y, z, vx, vy, vz = setup_grid(Ngrid,Lg)
+    x, y, z, vx, vy, vz = setup_grid(Ngrid, Lg)
     rho, rhovx, rhovy, rhovz, rhoe = sph_code.get_hydro_state_at_point(x, y, z, vx, vy, vz)
     rho = rhoe.reshape((Ngrid + 1, Ngrid + 1))
     max_dens = np.log10(rho.value_in(units.m**-1 * units.s**-2 * units.kg)).max()
@@ -477,58 +496,56 @@ def solar_logs(solar_pos_list, particles, current_time):
     
 ###### merger function ######
 
-def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter,
-                    solver=Gadget2, interval=0.5|units.Myr,
-                    animation=False, snapshot=False, snap_freq=1000,
-                    particles=None, particles_solver=None, sph_code=None, Lg=0):
+def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter, solver, 
+                    interval=0.5|units.Myr, animation=False, snapshot=False, snap_freq=1000,
+                    sol_system=None, igm_gas_particles=None, igm_dm_particles=None, box_grid=0):
 
     #sets up the gravity solver
-    if particles == None:
-        dynamics_code = Gadget2(converter, number_of_workers=4)
-    else:
-        dynamics_code = Fi(converter, redirection='none', number_of_workers=1)
-
-    #dynamics_code = solver(converter, number_of_workers=4)
+    dynamics_code = solver(converter, number_of_workers=4)
     dynamics_code.parameters.epsilon_squared = (100 | units.parsec)**2
+    dynamics_code.timestep = interval
+    #if igm_gas_particles != None and igm_dm_particles != None:
+        #dynamics_code.parameters.self_gravity_flag = True
+    
+    #computes coordinate difference between mw center of mass and solar system and moves it
+    if sol_system != None:
+        deltapos = galaxy1.center_of_mass() - sol_system.position
+        sol_system.position = galaxy1.center_of_mass() - deltapos
+    
+    #uploads the particles into the gravity solver
+    set1 = dynamics_code.dm_particles.add_particles(galaxy1)
+    set2 = dynamics_code.dm_particles.add_particles(galaxy2)
+    if sol_system != None:
+        set5 = dynamics_code.dm_particles.add_particles(sol_system)
 
-    if isinstance(dynamics_code, Gadget2) or isinstance(dynamics_code, Fi):
-        #when using Gadget2 or Fi
-        set1 = dynamics_code.dm_particles.add_particles(galaxy1)
-        set2 = dynamics_code.dm_particles.add_particles(galaxy2)
-        if not sph_code == None:
-            set3 = dynamics_code.particles.add_particles(sph_code.particles)
-    elif isinstance(dynamics_code, BHTree):
-        #when using BHTree
-        set1 = dynamics_code.particles.add_particles(galaxy1)
-        set2 = dynamics_code.particles.add_particles(galaxy2)
-
-    #computes coordinate difference between mw center of mass and solar system
-    if particles != None:
-        deltapos = set1.center_of_mass() - particles.position
-
-    #moves system to center of mass and creates channels
+    #moves system to center of mass 
     dynamics_code.particles.move_to_center()
-    mw_channel = dynamics_code.particles.new_channel_to(set1)
-    m31_channel = dynamics_code.particles.new_channel_to(set2)
-    if not sph_code == None:
-        igm_channel = dynamics_code.particles.new_channel_to(set3)
-
-    #moves the solar system particles
-    if particles != None:
-        particles.position = set1.center_of_mass() - deltapos
-
-    if isinstance(dynamics_code, Gadget2):
-        dynamics_code.timestep = interval
-    elif isinstance(dynamics_code, Fi):
+    
+    #uploads igm particles
+    if igm_gas_particles != None and igm_dm_particles != None:
+        set3 = dynamics_code.dm_particles.add_particles(igm_gas_particles)
+        set4 = dynamics_code.dm_particles.add_particles(igm_dm_particles)
+    
+    #creates channels
+    mw_channel = dynamics_code.dm_particles.new_channel_to(set1)
+    m31_channel = dynamics_code.dm_particles.new_channel_to(set2)
+    if igm_gas_particles != None and igm_dm_particles != None:
+        igm_gas_channel = dynamics_code.gas_particles.new_channel_to(set3)
+        igm_dm_channel = dynamics_code.dm_particles.new_channel_to(set4)
+    if sol_system != None:
+        solar_channel = dynamics_code.dm_particles.new_channel_to(set5)
+    
+    #checks if the solver is Fi
+    if isinstance(dynamics_code, Fi):
         dynamics_code.parameters.timestep = interval
         dynamics_code.update_particle_set()
-
+        
     #creates output dirs
     out_dir, current_merger = create_merger_output_dir()
     diskbulge_merger_dir, contour_merger_dir, zoom_merger_dir, mw_zoom_dir, histogram_dir, igm_dir = create_merger_subdirs(out_dir)
 
+    #initializes animations
     if animation:
-        #initializes animations
         animation_number = 1
         last_anim_time = 0 | units.Myr
         db_writer = GalaxyAnimWriter(current_merger + '_diskbulge_anim' + str(animation_number).zfill(2))
@@ -547,56 +564,48 @@ def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter,
     _a, _b = plt_anim_wrapper(set1, set2, n_disk, n_bulge,
                               last_snap_number, current_time, last_plot_time, 'MW M31 merger',
                               diskbulge_merger_dir, contour_merger_dir, zoom_merger_dir, mw_zoom_dir,
-                              'mw_m31', t_end, 100000, particles=particles,
+                              'mw_m31', t_end, 100000, particles=set5,
                               animation=animation, snapshot=snapshot,
                               diskbulge_writer=db_writer, contour_writer=cr_writer, zoom_writer=zm_writer,
                               zoom=start_zoom_plot)
-    if not sph_code == None:
-        plot_igm(sph_code, 500, Lg, igm_dir, 'IGM_density_t0')
+    
+    #plots starting IGM
+    #if igm_gas_particles != None and igm_dm_particles != None:
+    #    plot_igm(set3|set4, 500, Lg, igm_dir, 'IGM_density_t0')
 
-    #initializes separation
+    #initializes separation logs and solar system positions
     sep_list = [[], []]
     sep_list = sep_logs(sep_list, separation(set1, set2).value_in(units.kpc), current_time.value_in(units.Myr))
-    
-    #initializes solar system position
-    if not particles == None: 
-        solar_pos_list = [[] for i in range(3*len(particles) + 1)]    #first list is the time
-        solar_pos_list = solar_logs(solar_pos_list, particles, current_time.value_in(units.Myr))
+    if not sol_system == None: 
+        solar_pos_list = [[] for i in range(3*len(sol_system) + 1)]    #first list is the time
+        solar_pos_list = solar_logs(solar_pos_list, set5, current_time.value_in(units.Myr))
 
+    #initializes progressbar
     current_iter = 0
     t_end_in_Myr = t_end.as_quantity_in(units.Myr)
     total_iter = int(t_end_in_Myr/interval) + 1
-
     widgets = ['Step ', pbwg.SimpleProgress(), ' ',
                pbwg.Bar(marker='=', tip='>', left='[', right=']', fill=' '),
                pbwg.Percentage(), ' - ', pbwg.ETA('ETA'), pbwg.EndMsg()]
     progress = pbar.ProgressBar(widgets=widgets, maxval=total_iter, fd=sys.stdout).start()
-
-    #hisstep = 2 
     
     while dynamics_code.model_time < t_end:
-
-        current_iter +=1
         
+        #evolves model
         dynamics_code.evolve_model(dynamics_code.model_time + interval)
         if isinstance(dynamics_code, Fi):
             dynamics_code.update_particle_set()
-
-        if particles != None:
-            particles_solver(current_iter, particles, dynamics_code)
-
+        
+        #copies channels
         mw_channel.copy()
         m31_channel.copy()
-        if not sph_code == None:
-            igm_channel.copy()
+        if sol_system != None:
+            solar_channel.copy()
+        if igm_gas_particles != None and igm_dm_particles != None:
+            igm_gas_channel.copy()
+            igm_dm_channel.copy()
         
-        #if current_iter/hisstep == math.floor(current_iter/hisstep):
-        #    print('test')
-            #his.solardistance(set1.center_of_mass().in_(units.kpc),
-            #                  particles.position.in_(units.kpc), 5, 10,
-            #                  dynamics_code.model_time.in_(units.Myr))
-            #0 and 20 are the range in kpc of histogram,we cannt use it with
-        
+        #makes plots
         if last_plot_time.value_in(units.Myr) > 3000:
             start_zoom_plot = True
         last_plot_time, last_snap_number = plt_anim_wrapper(set1, set2, n_disk, n_bulge,
@@ -604,16 +613,18 @@ def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter,
                                                             'MW M31 merger',
                                                             diskbulge_merger_dir, contour_merger_dir,
                                                             zoom_merger_dir, mw_zoom_dir,
-                                                            'mw_m31', t_end, snap_freq, particles=particles,
+                                                            'mw_m31', t_end, snap_freq, particles=set5,
                                                             animation=animation, snapshot=snapshot,
                                                             diskbulge_writer=db_writer, contour_writer=cr_writer,
                                                             zoom_writer=zm_writer, zoom=start_zoom_plot)
+        
+        #updates separation logs and solar system positions
         sep_list = sep_logs(sep_list, separation(set1, set2).value_in(units.kpc),
                             dynamics_code.model_time.value_in(units.Myr))
+        if not sol_system == None:
+            solar_pos_list = solar_logs(solar_pos_list, set5, dynamics_code.model_time.value_in(units.Myr))
         
-        if not particles == None:
-            solar_pos_list = solar_logs(solar_pos_list, particles, dynamics_code.model_time.value_in(units.Myr))
-
+        #manages animations
         if animation:
             if close_animation(dynamics_code.model_time, last_anim_time):
                 db_writer.close()
@@ -624,15 +635,19 @@ def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter,
                 db_writer = GalaxyAnimWriter(current_merger + '_diskbulge_anim' + str(animation_number).zfill(2))
                 cr_writer = GalaxyAnimWriter(current_merger + '_contour_anim'+ str(animation_number).zfill(2))
                 zm_writer = GalaxyAnimWriter(current_merger + '_zoom_anim'+ str(animation_number).zfill(2))
-
+        
+        #updates progressbar
+        current_iter +=1
         progress.update(current_iter)
     
+    #closes progressbar
     progress.finish()
     
-    if not sph_code == None:
-        plot_igm(sph_code, 500, Lg, igm_dir, 'IGM_density_tfinal')
-        sph_code.stop()
-        
+    #plots final IGM
+    #if igm_gas_particles != None and igm_dm_particles != None:
+    #    plot_igm(igm_gas_particles|igm_dm_particles, 500, Lg, igm_dir, 'IGM_density_tfinal')
+    
+    #kills solver
     dynamics_code.stop()
     
     #creates separation dictionary
@@ -643,16 +658,17 @@ def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter,
     df_sep.to_csv('{}separation.csv'.format(out_dir), index=False)
     
     #creates solar position dictionary
-    if not particles == None:
+    if not sol_system == None:
         solar_dict = {}
         solar_dict.update({'time (Myr)': solar_pos_list[0]})
-        for i in range(len(particles)):
+        for i in range(len(sol_system)):
             solar_dict.update({'x_tr_' + str(i).zfill(5) + ' (kpc)': solar_pos_list[1+3*i]})
             solar_dict.update({'y_tr_' + str(i).zfill(5) + ' (kpc)': solar_pos_list[1+3*i+1]})
             solar_dict.update({'z_tr_' + str(i).zfill(5) + ' (kpc)': solar_pos_list[1+3*i+2]})
         df_solar = pd.DataFrame(solar_dict)
         df_solar.to_csv('{}solar_position.csv'.format(out_dir), index=False)
-
+    
+    #closes animations
     if animation:
         db_writer.close()
         cr_writer.close()

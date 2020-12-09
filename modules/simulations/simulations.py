@@ -484,12 +484,15 @@ def sep_logs(sep_list, sep, current_time):
 
 ###### solar system position ######
 
-def solar_logs(solar_pos_list, particles, current_time):
+def solar_logs(solar_pos_list, mw_com, particles, current_time):
     solar_pos_list[0].append(current_time)
+    solar_pos_list[1].append(mw_com.x.value_in(units.kpc))
+    solar_pos_list[2].append(mw_com.y.value_in(units.kpc))
+    solar_pos_list[3].append(mw_com.z.value_in(units.kpc))
     for i in range(0, len(particles)):
-        solar_pos_list[1+3*i].append(particles[i-1].x.value_in(units.kpc))
-        solar_pos_list[1+3*i+1].append(particles[i-1].y.value_in(units.kpc))
-        solar_pos_list[1+3*i+2].append(particles[i-1].y.value_in(units.kpc))
+        solar_pos_list[4+3*i].append(particles[i-1].x.value_in(units.kpc))
+        solar_pos_list[4+3*i+1].append(particles[i-1].y.value_in(units.kpc))
+        solar_pos_list[4+3*i+2].append(particles[i-1].z.value_in(units.kpc))
         
     return solar_pos_list
 
@@ -576,9 +579,10 @@ def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter,
     #initializes separation logs and solar system positions
     sep_list = [[], []]
     sep_list = sep_logs(sep_list, separation(set1, set2).value_in(units.kpc), current_time.value_in(units.Myr))
-    if not sol_system == None: 
-        solar_pos_list = [[] for i in range(3*len(sol_system) + 1)]    #first list is the time
-        solar_pos_list = solar_logs(solar_pos_list, set5, current_time.value_in(units.Myr))
+    if not sol_system == None:
+        #index 0 is the time, indexes 1, 2 and 3 are the xyz coordinates of the mw center of mass
+        solar_pos_list = [[] for i in range(3*len(sol_system) + 4)]    
+        solar_pos_list = solar_logs(solar_pos_list, set1.center_of_mass(), set5, current_time.value_in(units.Myr))
 
     #initializes progressbar
     current_iter = 0
@@ -622,7 +626,7 @@ def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter,
         sep_list = sep_logs(sep_list, separation(set1, set2).value_in(units.kpc),
                             dynamics_code.model_time.value_in(units.Myr))
         if not sol_system == None:
-            solar_pos_list = solar_logs(solar_pos_list, set5, dynamics_code.model_time.value_in(units.Myr))
+            solar_pos_list = solar_logs(solar_pos_list, set1.center_of_mass(), set5, dynamics_code.model_time.value_in(units.Myr))
         
         #manages animations
         if animation:
@@ -661,10 +665,13 @@ def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter,
     if not sol_system == None:
         solar_dict = {}
         solar_dict.update({'time (Myr)': solar_pos_list[0]})
+        solar_dict.update({'mw_com_x (kpc)': solar_pos_list[1]})
+        solar_dict.update({'mw_com_y (kpc)': solar_pos_list[2]})
+        solar_dict.update({'mw_com_z (kpc)': solar_pos_list[3]})
         for i in range(len(sol_system)):
-            solar_dict.update({'x_tr_' + str(i).zfill(5) + ' (kpc)': solar_pos_list[1+3*i]})
-            solar_dict.update({'y_tr_' + str(i).zfill(5) + ' (kpc)': solar_pos_list[1+3*i+1]})
-            solar_dict.update({'z_tr_' + str(i).zfill(5) + ' (kpc)': solar_pos_list[1+3*i+2]})
+            solar_dict.update({'x_tr_' + str(i).zfill(5) + ' (kpc)': solar_pos_list[4+3*i]})
+            solar_dict.update({'y_tr_' + str(i).zfill(5) + ' (kpc)': solar_pos_list[4+3*i+1]})
+            solar_dict.update({'z_tr_' + str(i).zfill(5) + ' (kpc)': solar_pos_list[4+3*i+2]})
         df_solar = pd.DataFrame(solar_dict)
         df_solar.to_csv('{}solar_position.csv'.format(out_dir), index=False)
     

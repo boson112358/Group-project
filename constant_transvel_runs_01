@@ -1,0 +1,7 @@
+#!/bin/bash
+
+mpiexec amuse mw_m31_merger.py --test --solar --radvel 0.1 --transvel 0.5
+mpiexec amuse mw_m31_merger.py --test --solar --radvel 0.2 --transvel 0.5
+mpiexec amuse mw_m31_merger.py --test --solar --radvel 0.3 --transvel 0.5
+mpiexec amuse mw_m31_merger.py --test --solar --radvel 0.4 --transvel 0.5
+mpiexec amuse mw_m31_merger.py --test --solar --radvel 0.5 --transvel 0.5

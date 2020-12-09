@@ -1,10 +1,5 @@
 #!/bin/bash
 
-mpiexec amuse mw_m31_merger.py --test --solar --radvel 0.5 --transvel 0.1
-mpiexec amuse mw_m31_merger.py --test --solar --radvel 0.5 --transvel 0.2
-mpiexec amuse mw_m31_merger.py --test --solar --radvel 0.5 --transvel 0.3
-mpiexec amuse mw_m31_merger.py --test --solar --radvel 0.5 --transvel 0.4
-mpiexec amuse mw_m31_merger.py --test --solar --radvel 0.5 --transvel 0.5
 mpiexec amuse mw_m31_merger.py --test --solar --radvel 0.5 --transvel 0.6
 mpiexec amuse mw_m31_merger.py --test --solar --radvel 0.5 --transvel 0.7
 mpiexec amuse mw_m31_merger.py --test --solar --radvel 0.5 --transvel 0.8

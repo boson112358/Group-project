@@ -187,6 +187,29 @@ else:
 radial_velocity =  m31_radvel_factor * 117 * np.array([0.4898, -0.7914, 0.3657]) | units.kms
 transverse_velocity = m31_transvel_factor * 42 * np.array([0.5236, 0.6024, 0.6024]) | units.kms
 
+initial_conditions_dict = {#mw parameters
+                           'mw_n_halo': [mw_parameters['n_halo']],
+                           'mw_disk_number_of_particles' : [mw_parameters['disk_number_of_particles']],
+                           'mw_disk_mass (MSun)' :[mw_parameters['disk_mass'].value_in(units.MSun)],
+                           'mw_bulge_number_of_particles' : [mw_parameters['bulge_number_of_particles']],
+                           #m31 parameters
+                           'm31_n_halo': [m31_parameters['n_halo']],
+                           'm31_disk_number_of_particles' : [m31_parameters['disk_number_of_particles']],
+                           'm31_disk_mass (MSun)' : [m31_parameters['disk_mass'].value_in(units.MSun)],
+                           'm31_bulge_number_of_particles' : [m31_parameters['bulge_number_of_particles']],
+                           #time parameters
+                           't final (Myr)': [t_end.value_in(units.Myr)],
+                           't step (Myr)': [t_end.value_in(units.Myr)],
+                           #m31 dynamic parameters
+                           'm31_radvel_factor (* 117 km/s)': [m31_radvel_factor],
+                           'm31_transvel_factor (* 42 km/s)': [m31_transvel_factor],
+                           #solar tracker parameters
+                           'add_solar': [SOLAR],
+                           'n_stars': [n_stars],                                      
+                           'solar_radial_distance (kpc)': [solar_radial_distance],
+                           'solar_system_radius (kpc)': [system_radius.value_in(units.kpc)],
+                           #igm parameters
+                           'add_igm': [IGM]}
 
 ###### galaxy initialization ######
 
@@ -242,6 +265,8 @@ else:
 mw_mass = da.galaxy_total_mass(mw)
 m31_mass = da.galaxy_total_mass(m31_not_displaced)
 
+initial_conditions_dict.update({'mw_mass': [mw_mass.value_in(units.MSun)], 'm31_mass': [m31_mass.value_in(units.MSun)]})
+
 if NOMERGER:
     print('Quitting after galaxy initialization')
     quit()
@@ -281,7 +306,7 @@ if not MWSOLAR:
     txt_line5 = 'm31 transverse velocity factor = {} * 42'.format(m31_transvel_factor)
     print(txt_line1 + txt_line2 + txt_line3 + txt_line4 + txt_line5, flush=True)
 
-    sim.simulate_merger(mw, m31, n_halo, n_disk, n_bulge, t_end, converter, Gadget2Gravity,
+    sim.simulate_merger(mw, m31, n_halo, n_disk, n_bulge, t_end, converter, Gadget2Gravity, initial_conditions_dict,
                         interval=5.|units.Myr, 
                         animation=ANIMATION, snapshot=SNAPSHOT, snap_freq=1000,
                         sol_system=stars,  

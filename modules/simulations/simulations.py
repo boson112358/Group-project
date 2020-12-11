@@ -15,7 +15,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
-from amuse.lab import units, Particles, Fi, Gadget2, BHTree
+from amuse.lab import units, Particles, Fi, Gadget2, BHTree, ParticlesSuperset
 from amuse.couple import bridge
 
 
@@ -496,10 +496,82 @@ def solar_logs(solar_pos_list, mw_com, particles, current_time):
         
     return solar_pos_list
 
+
+###### update merger dictionary ######
+
+def update_merger_dict(mrgr_dict, current_time, glxy1, glxy2, solar=None):
+    
+    glxy1_com = glxy1.center_of_mass()
+    glxy2_com = glxy2.center_of_mass()
+    one_and_two = ParticlesSuperset([glxy1, glxy2])
+    one_and_two_com = one_and_two.center_of_mass()
+    
+    key_list = ['time (Myr)', 'mw_com_x (kpc)', 'mw_com_y (kpc)', 'mw_com_z (kpc)', 
+                'm31_com_y (kpc)', 'm31_com_y (kpc)', 'm31_com_z (kpc)', 
+                'mw_m31_com_x (kpc)', 'mw_m31_com_y (kpc)', 'mw_m31_com_z (kpc)']
+    
+    value_list = [current_time.value_in(units.Myr), 
+                  glxy1_com.x.value_in(units.kpc), 
+                  glxy1_com.y.value_in(units.kpc), 
+                  glxy1_com.z.value_in(units.kpc),
+                  glxy2_com.x.value_in(units.kpc), 
+                  glxy2_com.y.value_in(units.kpc), 
+                  glxy2_com.x.value_in(units.kpc),
+                  one_and_two_com.x.value_in(units.kpc), 
+                  one_and_two_com.y.value_in(units.kpc), 
+                  one_and_two_com.z.value_in(units.kpc)]
+    
+    #check if the key exists, if not creates that key with a list
+    for key, value in zip(key_list, value_list):
+        if key in mrgr_dict:
+            mrgr_dict[key].append(value)
+        else:
+            mrgr_dict[key] = [value]
+    
+    if not solar == None:
+        solar_com = solar.center_of_mass()
+        
+        solar_com_keys = ['solar_com_x (kpc)', 'solar_com_y (kpc)', 'solar_com_z (kpc)']                
+        solar_com_values = [solar_com.x.value_in(units.kpc), 
+                            solar_com.y.value_in(units.kpc), 
+                            solar_com.z.value_in(units.kpc)]
+        
+        for key, value in zip(solar_com_keys, solar_com_values):
+            if key in mrgr_dict:
+                mrgr_dict[key].append(value)
+            else:
+                mrgr_dict[key] = [value]
+        
+        solar_position_keys = [['x_tr_' + str(index).zfill(5) + ' (kpc)', 
+                                'y_tr_' + str(index).zfill(5) + ' (kpc)', 
+                                'z_tr_' + str(index).zfill(5) + ' (kpc)'] for index in range(len(solar))]
+        solar_position_values = [[tracker.x.value_in(units.kpc), 
+                                  tracker.y.value_in(units.kpc), 
+                                  tracker.z.value_in(units.kpc)] for tracker in solar]
+        
+        for tracker_key_list, tracker_value_list in zip(solar_position_keys, solar_position_values):
+            for key, value in zip(tracker_key_list, tracker_value_list):
+                if key in mrgr_dict:
+                    mrgr_dict[key].append(value)
+                else:
+                    mrgr_dict[key] = [value]
+                         
+    return mrgr_dict
+
+def pad_dict_list(dict_list, padel):
+    lmax = 0
+    for lname in dict_list.keys():
+        lmax = max(lmax, len(dict_list[lname]))
+    for lname in dict_list.keys():
+        ll = len(dict_list[lname])
+        if  ll < lmax:
+            dict_list[lname] += [padel] * (lmax - ll)
+    return dict_list
+
     
 ###### merger function ######
 
-def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter, solver, 
+def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter, solver, initial_conditions_dict,
                     interval=0.5|units.Myr, animation=False, snapshot=False, snap_freq=1000,
                     sol_system=None, igm_gas_particles=None, igm_dm_particles=None, box_grid=0):
 
@@ -520,6 +592,8 @@ def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter,
     set2 = dynamics_code.dm_particles.add_particles(galaxy2)
     if sol_system != None:
         set5 = dynamics_code.dm_particles.add_particles(sol_system)
+    else:
+        set5 = None
 
     #moves system to center of mass 
     dynamics_code.particles.move_to_center()
@@ -533,7 +607,7 @@ def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter,
     mw_channel = dynamics_code.dm_particles.new_channel_to(set1)
     m31_channel = dynamics_code.dm_particles.new_channel_to(set2)
     if igm_gas_particles != None and igm_dm_particles != None:
-        igm_gas_channel = dynamics_code.gas_particles.new_channel_to(set3)
+        igm_gas_channel = dynamics_code.dm_particles.new_channel_to(set3)
         igm_dm_channel = dynamics_code.dm_particles.new_channel_to(set4)
     if sol_system != None:
         solar_channel = dynamics_code.dm_particles.new_channel_to(set5)
@@ -577,12 +651,8 @@ def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter,
     #    plot_igm(set3|set4, 500, Lg, igm_dir, 'IGM_density_t0')
 
     #initializes separation logs and solar system positions
-    sep_list = [[], []]
-    sep_list = sep_logs(sep_list, separation(set1, set2).value_in(units.kpc), current_time.value_in(units.Myr))
-    if not sol_system == None:
-        #index 0 is the time, indexes 1, 2 and 3 are the xyz coordinates of the mw center of mass
-        solar_pos_list = [[] for i in range(3*len(sol_system) + 4)]    
-        solar_pos_list = solar_logs(solar_pos_list, set1.center_of_mass(), set5, current_time.value_in(units.Myr))
+    merger_dict = initial_conditions_dict       
+    merger_dict = update_merger_dict(merger_dict, current_time, set1, set2, solar=set5)
 
     #initializes progressbar
     current_iter = 0
@@ -609,11 +679,14 @@ def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter,
             igm_gas_channel.copy()
             igm_dm_channel.copy()
         
+        #current time of the solver
+        current_time = dynamics_code.model_time
+        
         #makes plots
         if last_plot_time.value_in(units.Myr) > 3000:
             start_zoom_plot = True
         last_plot_time, last_snap_number = plt_anim_wrapper(set1, set2, n_disk, n_bulge,
-                                                            last_snap_number, dynamics_code.model_time, last_plot_time,
+                                                            last_snap_number, current_time, last_plot_time,
                                                             'MW M31 merger',
                                                             diskbulge_merger_dir, contour_merger_dir,
                                                             zoom_merger_dir, mw_zoom_dir,
@@ -623,10 +696,7 @@ def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter,
                                                             zoom_writer=zm_writer, zoom=start_zoom_plot)
         
         #updates separation logs and solar system positions
-        sep_list = sep_logs(sep_list, separation(set1, set2).value_in(units.kpc),
-                            dynamics_code.model_time.value_in(units.Myr))
-        if not sol_system == None:
-            solar_pos_list = solar_logs(solar_pos_list, set1.center_of_mass(), set5, dynamics_code.model_time.value_in(units.Myr))
+        merger_dict = update_merger_dict(merger_dict, current_time, set1, set2, solar=set5)
         
         #manages animations
         if animation:
@@ -654,33 +724,19 @@ def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter,
     #kills solver
     dynamics_code.stop()
     
-    #creates separation dictionary
-    sep_dict = {}
-    sep_dict.update({'time (Myr)': sep_list[0]})
-    sep_dict.update({'sep (kpc)': sep_list[1]})
-    df_sep = pd.DataFrame(sep_dict)
-    df_sep.to_csv('{}separation.csv'.format(out_dir), index=False)
+    #checks if every dict key list has the same numer of elements
+    merger_dict = pad_dict_list(merger_dict, -1)
     
-    #creates solar position dictionary
-    if not sol_system == None:
-        solar_dict = {}
-        solar_dict.update({'time (Myr)': solar_pos_list[0]})
-        solar_dict.update({'mw_com_x (kpc)': solar_pos_list[1]})
-        solar_dict.update({'mw_com_y (kpc)': solar_pos_list[2]})
-        solar_dict.update({'mw_com_z (kpc)': solar_pos_list[3]})
-        for i in range(len(sol_system)):
-            solar_dict.update({'x_tr_' + str(i).zfill(5) + ' (kpc)': solar_pos_list[4+3*i]})
-            solar_dict.update({'y_tr_' + str(i).zfill(5) + ' (kpc)': solar_pos_list[4+3*i+1]})
-            solar_dict.update({'z_tr_' + str(i).zfill(5) + ' (kpc)': solar_pos_list[4+3*i+2]})
-        df_solar = pd.DataFrame(solar_dict)
-        df_solar.to_csv('{}solar_position.csv'.format(out_dir), index=False)
-    
+    #saves merger logs into dataframe
+    df_merger = pd.DataFrame(merger_dict)
+    df_merger.to_csv('{}merger_logs.csv'.format(out_dir), index=False)
+                           
     #closes animations
     if animation:
         db_writer.close()
         cr_writer.close()
         zm_writer.close()
-
+    
 
 """
 def simulate_merger(galaxy1, galaxy2, n_halo, n_disk, n_bulge, t_end, converter, 

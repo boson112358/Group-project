@@ -507,7 +507,7 @@ def update_merger_dict(mrgr_dict, current_time, glxy1, glxy2, solar=None):
     one_and_two_com = one_and_two.center_of_mass()
     
     key_list = ['time (Myr)', 'mw_com_x (kpc)', 'mw_com_y (kpc)', 'mw_com_z (kpc)', 
-                'm31_com_y (kpc)', 'm31_com_y (kpc)', 'm31_com_z (kpc)', 
+                'm31_com_x (kpc)', 'm31_com_y (kpc)', 'm31_com_z (kpc)', 
                 'mw_m31_com_x (kpc)', 'mw_m31_com_y (kpc)', 'mw_m31_com_z (kpc)']
     
     value_list = [current_time.value_in(units.Myr), 

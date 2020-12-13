@@ -307,7 +307,7 @@ if not MWSOLAR:
     print(txt_line1 + txt_line2 + txt_line3 + txt_line4 + txt_line5, flush=True)
 
     sim.simulate_merger(mw, m31, n_halo, n_disk, n_bulge, t_end, converter, Gadget2Gravity, initial_conditions_dict,
-                        interval=5.|units.Myr, 
+                        interval=t_step, 
                         animation=ANIMATION, snapshot=SNAPSHOT, snap_freq=1000,
                         sol_system=stars,  
                         igm_gas_particles=igm_gas, igm_dm_particles=igm_dm, box_grid=box_grid)
